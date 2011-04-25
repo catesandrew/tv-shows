@@ -6,7 +6,6 @@
 
 #import "Controller.h"
 #import "ValueTransformers.h"
-#import "TVTextFieldCell.h"
 
 // Toolbar
 #define ToolbarFilter			@"Filter"
