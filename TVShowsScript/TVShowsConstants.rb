@@ -25,10 +25,10 @@ SHOW_TITLE							= "Title"
 SHOW_TYPE							= "Type"
 SHOW_TIME							= "Time"
 
-FEED = "http://tvrss.net/search/index.php?show_name=%s&show_name_exact=true&mode=rss"
+FEED = "http://ezrss.it/search/index.php?show_name=%s&show_name_exact=true&mode=rss"
 REQUIRED_KEYS = [SHOW_HUMANNAME,SHOW_EXACTNAME,SHOW_SUBSCRIBED,SHOW_TYPE]
 QUALITIES = [
-	[/\[HD/,/\[DSRIP/,/\[TVRIP/,/\[PDTV/,/\[DVD/],
+	[/\[HD/,/\[WS/,/\[DSRIP/,/\[TVRIP/,/\[PDTV/,/\[DVD/],
 	[/\[HR/],
 	[/\[720p/i]
 ]

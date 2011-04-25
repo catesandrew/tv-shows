@@ -51,6 +51,7 @@ class Episode
 	def download
 		path = File.join(@show.preferences[PREFS_TORRENT_FOLDER],torrentFile)
 		file = File.new(path,'w')
+		@torrentURL = @torrentURL.sub( /\[/, '%5B' ).sub( /\]/, '%5D' )
 		open(@torrentURL) { |data| file.write(data.read) }
 		file.close
 		`open \"#{path}\"` if ( @show.preferences[PREFS_AUTOMATICALLY_OPEN_TORRENT] )
@@ -169,9 +170,9 @@ class Show
 
 	def parseRSSFeed
 		begin
-			rawEpisodes = SimpleRSS.parse(open(FEED % @exactName,"User-Agent"=>"TVShows/#{@preferences['PREFS_SCRIPTVERSION']}"))
+			rawEpisodes = SimpleRSS.parse(open(FEED % @exactName,"User-Agent"=>"Apple-PubSub/65.11"))
 		rescue SocketError => e
-			printError "(SocketError, #{e.inspect}) unable to contact tvrss.net, are you connected to the internet?"
+			printError "(SocketError, #{e.inspect}) unable to contact ezrss.it, are you connected to the internet?"
 			return nil
 		rescue Exception => e
 			printError "(Exception, #{e.inspect}) unable to parse RSS feed, skipping."
@@ -325,7 +326,7 @@ end
 class TVShows
 	
 	def initialize(preferencesFile,showsFile)
-		die("can't reach tvrss.net, are you connected to the internet?") unless isConnectedToTheInternet
+		die("can't reach ezrss.it, are you connected to the internet?") unless isConnectedToTheInternet
 		
 		@showsFile = showsFile
 		@preferencesFile = preferencesFile
@@ -366,7 +367,7 @@ class TVShows
 	end
 	
 	def ping
-		TCPSocket.new("www.tvrss.net",80)
+		TCPSocket.new("www.ezrss.it",80)
 		return true
 	rescue Exception => e
 		return false

@@ -37,7 +37,7 @@ requires.each { |r|
 class Show
 	
 	def initialize(name)
-		@feed = "http://tvrss.net/search/index.php?show_name=%s&show_name_exact=true&mode=rss"
+		@feed = "http://ezrss.it/search/index.php?show_name=%s&show_name_exact=true&mode=rss"
 		@name = name
 	end
 	
@@ -47,7 +47,7 @@ class Show
 		begin
 			rawEpisodes = SimpleRSS.parse(open(url))
 		rescue => exception
-			printError("could not connect to tvrss.net (#{exception.message})")
+			printError("could not connect to ezrss.it (#{exception.message})")
 			raise "GetShowDetailsError"
 		end
 		

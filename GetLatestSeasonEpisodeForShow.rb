@@ -8,7 +8,7 @@ require File.join(File.dirname(__FILE__), 'TVShowsScript/lib/simple-rss.rb')
 require 'open-uri'
 
 begin
-	feed = "http://tvrss.net/search/index.php?show_name=%s&show_name_exact=true&mode=rss"
+	feed = "http://ezrss.it/search/index.php?show_name=%s&show_name_exact=true&mode=rss"
 	url = feed % ARGV[0]
 	begin
 		episodes = SimpleRSS.parse(open(url))

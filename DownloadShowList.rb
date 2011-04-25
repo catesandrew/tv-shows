@@ -10,9 +10,9 @@ requires = [
 	File.join(File.dirname(__FILE__), 'TVShowsScript/lib/plist.rb')
 ]
 
-def die(message)
+def die(message,exitstatus = 1)
 	$stderr.puts "TVShows Error: #{message}"
-	exit(-1)
+	exit(exitstatus)
 end
 def printError(message)
 	$stderr.puts "TVShows Error: #{message}"
@@ -44,14 +44,14 @@ begin
 	data = nil
 	3.times { |n|
 		begin
-			data = open("http://tvrss.net/shows")
+			data = open("http://ezrss.it/shows")
 			break
 		rescue Exception, Timeout::Error => e
 			printError("Failed to download the list, retrying...")
 		end
 	}
 	
-	exit(1) if data.nil?	
+	raise "Data is nil." if data.nil?	
 	
 	data.read.scan(/show_name=(.*?)&amp;show_name_exact=true\">(.*?)</i).each { |show|
 		shows["Shows"] << {
@@ -71,22 +71,25 @@ begin
 			exit(1)
 		end
 		
-		showsToAdd = []
-		shows["Shows"].each { |show|
-			if ( !knownShows["Shows"].find{|ks| ks["ExactName"] == show["ExactName"]} ) then
-				showsToAdd << show
-			end
-		}
+		if !knownShows.nil? then
+			showsToAdd = []
+			shows["Shows"].each { |show|
+				if ( !knownShows["Shows"].find{|ks| ks["ExactName"] == show["ExactName"]} ) then
+					showsToAdd << show
+				end
+			}
 		
-		knownShows["Shows"] += showsToAdd
-		knownShows["Version"] = version
-		shows = knownShows
-		
+			knownShows["Shows"] += showsToAdd
+			knownShows["Version"] = version
+			shows = knownShows
+		end
 	end
 
+	shows["Shows"] = shows["Shows"].sort_by{ |s| s["HumanName"] }
 	shows.save_plist(path)
 
-rescue
+rescue Exception, Timeout::Error => e
+	printException(e) 
 	exit(1)
 end
 
