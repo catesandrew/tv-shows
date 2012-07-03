@@ -29,7 +29,7 @@ static NSColor *sStripeColor = nil;
 	//NSLog(@"(%f,%f)->(%f,%f)",clipRect.origin.x,clipRect.origin.y,clipRect.size.width,clipRect.size.height);
     NSRect stripeRect;
     int rowIndex = 0;
-	float fullRowHeight = [self rowHeight] + [self intercellSpacing].height;
+	  float fullRowHeight = [self rowHeight] + [self intercellSpacing].height;
     float clipBottom = NSMaxY(clipRect);
     int firstStripe = clipRect.origin.y / fullRowHeight;
     stripeRect.origin.x = clipRect.origin.x;
@@ -41,11 +41,11 @@ static NSColor *sStripeColor = nil;
         sStripeColor = [[NSColor colorWithCalibratedRed:SoftGreenRed green:SoftGreeGreen blue:SoftGreenBlue alpha:1.0] retain];
     [sStripeColor set];
     // and draw the stripes
-	while (stripeRect.origin.y < clipBottom) {
-        if ( [(Controller *)[self delegate] shouldGreenRowAtIndex:(int)(stripeRect.origin.y/fullRowHeight)] ) {
-			NSRectFill(stripeRect);
+	  while (stripeRect.origin.y < clipBottom) {
+      if ( [(Controller *)[self delegate] shouldGreenRowAtIndex:(int)(stripeRect.origin.y/fullRowHeight)] ) {
+			  NSRectFill(stripeRect);
 		}
-        stripeRect.origin.y += fullRowHeight;
+    stripeRect.origin.y += fullRowHeight;
 		rowIndex++;
     }
 }
