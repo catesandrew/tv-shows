@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		49055CF615A7EEF2000246A4 /* TVShowsNodejs in Resources */ = {isa = PBXBuildFile; fileRef = 49055CF515A7EEF2000246A4 /* TVShowsNodejs */; };
 		5B1F7FF50BE22EB900B1094B /* Bookmark.png in Resources */ = {isa = PBXBuildFile; fileRef = 5B1F7FF40BE22EB900B1094B /* Bookmark.png */; };
 		5B1F7FF70BE22F9600B1094B /* Web.png in Resources */ = {isa = PBXBuildFile; fileRef = 5B1F7FF60BE22F9600B1094B /* Web.png */; };
 		5B1F7FF90BE22FF600B1094B /* Clock.png in Resources */ = {isa = PBXBuildFile; fileRef = 5B1F7FF80BE22FF600B1094B /* Clock.png */; };
@@ -57,6 +58,7 @@
 		29B97319FDCFA39411CA2CEA /* English */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = English; path = English.lproj/MainMenu.nib; sourceTree = "<group>"; };
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
+		49055CF515A7EEF2000246A4 /* TVShowsNodejs */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; name = TVShowsNodejs; path = Resources/TVShowsNodejs; sourceTree = "<group>"; };
 		5B1F7FF40BE22EB900B1094B /* Bookmark.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Bookmark.png; sourceTree = "<group>"; };
 		5B1F7FF60BE22F9600B1094B /* Web.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Web.png; sourceTree = "<group>"; };
 		5B1F7FF80BE22FF600B1094B /* Clock.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Clock.png; sourceTree = "<group>"; };
@@ -161,6 +163,7 @@
 		29B97317FDCFA39411CA2CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				49055CF515A7EEF2000246A4 /* TVShowsNodejs */,
 				5BE3B9940BCE4177003B6EAD /* Graphics */,
 				5B376D900B9B35B600663E2A /* TVShowsScript */,
 				5B52627A0BA0C4AC00FA11A4 /* Credits.rtf */,
@@ -269,6 +272,7 @@
 				5B1F7FF50BE22EB900B1094B /* Bookmark.png in Resources */,
 				5B1F7FF70BE22F9600B1094B /* Web.png in Resources */,
 				5B1F7FF90BE22FF600B1094B /* Clock.png in Resources */,
+				49055CF615A7EEF2000246A4 /* TVShowsNodejs in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
