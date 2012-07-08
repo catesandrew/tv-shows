@@ -4,6 +4,8 @@
  It may be used under the terms of the GNU General Public License.
 */
 
+#include "osdep.h"
+
 #import "Controller.h"
 #import "ValueTransformers.h"
 
@@ -45,7 +47,7 @@
 #define TVShowsScriptInstalledVersion @"ScriptVersion"
 
 // Ruby scripts
-#define RubyDownloadShowList		@"DownloadShowList"
+//#define RubyDownloadShowList		@"DownloadShowList"
 #define RubyGetShowDetails			@"GetShowDetails"
 
 // Misc
@@ -138,7 +140,7 @@
 										forName:@"DateToShortDateTransformer"];
 		
 		
-
+    os_init();
 	}
 	return self;
 }
@@ -245,10 +247,21 @@
 	
 	NSTask *aTask = [[NSTask alloc] init];
 	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(downloadShowListDidFinish:) name:NSTaskDidTerminateNotification object:aTask];
-	[aTask setArguments:[NSArray arrayWithObjects:[h showsPath],ShowsLatestVersion,nil]];
-	[aTask setLaunchPath:[[NSBundle mainBundle] pathForResource:RubyDownloadShowList ofType:@"rb"]];
-	[aTask launch];
-
+	
+  [aTask setLaunchPath: [NSString stringWithUTF8String:os_bundled_node_path]];
+  [aTask setCurrentDirectoryPath: [NSString stringWithUTF8String:os_bundled_backend_path]];
+  [aTask setArguments:[NSArray arrayWithObjects:@"download-show-list.js", nil]];
+  //[aTask setArguments:[NSArray arrayWithObjects:@"--import", chaptersFile, filePath, nil]];
+  //[aTask setArguments:[NSArray arrayWithObjects:[h showsPath],ShowsLatestVersion,nil]];
+  NSPipe* err = [NSPipe pipe];
+  [aTask setStandardError:err];
+  [aTask setStandardOutput:err];
+  [aTask launch];
+  //[aTask waitUntilExit];
+  //[self logFromProgram:@"mp4chaps" pipe:err];
+  //int ret = [aTask terminationStatus];
+  //[task release];
+  //return ret;
 }
 
 - (void)downloadShowListDidFinish: (NSNotification *)notification
@@ -376,7 +389,7 @@
 	if ( retries == 0 ) currentShow = [[showsController arrangedObjects] objectAtIndex:[sender clickedRow]];
 	if ( ![[currentShow valueForKey:ShowSubscribed] boolValue] ) {
 		if ( retries > 0 ) {
-			[detailsErrorText setStringValue:[NSString stringWithFormat:@"Could not reach tvrss.net, retrying (%d)...",retries]];
+			[detailsErrorText setStringValue:[NSString stringWithFormat:@"Could not reach eztv.it, retrying (%d)...",retries]];
 			[detailsErrorText setHidden:NO];
 			[detailsErrorText display];
 			sleep(2); // That's bad, I know
@@ -420,7 +433,7 @@
 		
 		retries = 0;
 		[detailsProgressIndicator setHidden:YES];
-		[detailsErrorText setStringValue:@"Could not reach tvrss.net, please retry later."];
+		[detailsErrorText setStringValue:@"Could not reach eztv.it, please retry later."];
 		return;
 		
 	// Should retry
@@ -588,14 +601,19 @@
 	}	
 	[launchdProperties setObject:[[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleIdentifier"] 
 						  forKey:@"Label"];
-	[launchdProperties setObject:[NSArray arrayWithObjects:[h scriptPath],[h preferencesFile],[h showsPath],nil]
+	[launchdProperties setObject:[NSArray arrayWithObjects:[NSString stringWithUTF8String:os_bundled_node_path],@"tv-shows.js",nil]
 						  forKey:@"ProgramArguments"];
 	[launchdProperties setObject:[Helper negate:[[NSUserDefaults standardUserDefaults] objectForKey:TVShowsIsEnabled]]
 						  forKey:@"Disabled"];
-	[launchdProperties setObject:[h logPath]
+	[launchdProperties setObject:[NSString stringWithUTF8String:os_log_file]
 						  forKey:@"StandardErrorPath"];
-	[launchdProperties setObject:[NSDictionary dictionaryWithObject:[h scriptFolder] forKey:@"TVSHOWSPATH"]
+  [launchdProperties setObject:[NSString stringWithUTF8String:os_log_file]
+                        forKey:@"StandardOutPath"];
+  
+	[launchdProperties setObject:[NSDictionary dictionaryWithObject:[NSString stringWithUTF8String:os_bundled_backend_path] forKey:@"TVSHOWSPATH"]
 						  forKey:@"EnvironmentVariables"];
+  [launchdProperties setObject:[NSString stringWithUTF8String:os_bundled_backend_path] forKey:@"WorkingDirectory"];
+  
 	[launchdProperties setObject:[NSNumber numberWithBool:YES]
 						  forKey:@"RunAtLoad"];
 	

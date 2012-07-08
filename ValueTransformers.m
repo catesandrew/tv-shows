@@ -107,23 +107,7 @@
 - (id)transformedValue:(id)value;
 {
 	if ( ( nil == [value objectForKey:@"Subscribed"] ) || [[value objectForKey:@"Subscribed"] boolValue] ) {
-		if ( [[value objectForKey:@"Type"] isEqualToString:@"SeasonEpisodeType"] ) {
-			return [NSString stringWithFormat:@"Season %@, Ep %@",[value objectForKey:@"Season"],[value objectForKey:@"Episode"]];
-		} else if ( [[value objectForKey:@"Type"] isEqualToString:@"DateType"] ) {
-			NSDateFormatter *df = [[[NSDateFormatter alloc] init] autorelease];
-			[df setDateStyle:NSDateFormatterMediumStyle];
-			[df setTimeStyle:NSDateFormatterNoStyle];
-			return [df stringFromDate:[value objectForKey:@"Date"]];
-		} else if ( [[value objectForKey:@"Type"] isEqualToString:@"TimeType"] ) {
-			if ( [value objectForKey:@"Title"] ) {
-				return [value objectForKey:@"Title"];
-			} else {
-				NSDateFormatter *df = [[[NSDateFormatter alloc] init] autorelease];
-				[df setDateStyle:NSDateFormatterMediumStyle];
-				[df setTimeStyle:NSDateFormatterShortStyle];
-				return [df stringFromDate:[value objectForKey:@"Time"]];
-			}
-		}
+    return [value objectForKey:@"LastSeen"];
 	}
 	return @"";
 }

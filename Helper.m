@@ -142,33 +142,33 @@ OSStatus chownToUidAndGidAtPath(uid_t uid, gid_t gid, char *path) {
 		[self chmodFolderAtPath:launchAgentsFolder];
 		
 		// Remove scriptFolder if we have a newer version to install
-		if ( [fm fileExistsAtPath:scriptPath] ) {
-			NSString *scriptVersion = [[NSUserDefaults standardUserDefaults] objectForKey:@"ScriptVersion"];
-			if ( !scriptVersion || NSOrderedAscending == [scriptVersion compare:[[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"] options:NSNumericSearch] )
-				if ( ![fm removeFileAtPath:scriptFolder handler:nil] )
-					[Helper dieWithErrorMessage:@"Could not remove the TVShows script folder in the Application Support folder in order to install the new one."];
-		}
-		
-		// Install the script in the Application Support folder
-		if ( ![fm fileExistsAtPath:scriptFolder] ) {
-			if ( ![fm copyPath:resourcesScriptFolder toPath:scriptFolder handler:nil] ) {
-				[Helper dieWithErrorMessage:@"Could not copy the TVShows script in the Application Support folder."];
-			} else {
-				// Chmod the scripts to make sure they're executable
-				[fm changeFileAttributes:[NSDictionary dictionaryWithObject:[NSNumber numberWithUnsignedLong:0744] forKey:NSFilePosixPermissions] atPath:scriptPath];
-				
-				// Set the new version
-				[[NSUserDefaults standardUserDefaults] setObject:[[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"] forKey:@"ScriptVersion"];
-				[[NSUserDefaults standardUserDefaults] synchronize];
-			}
-		}
-		
-		// Chmod the ruby scripts in the resource folder
-		NSEnumerator *scripts = [[[NSBundle mainBundle] pathsForResourcesOfType:@"rb" inDirectory:@""] objectEnumerator];
-		NSString *script;
-		while ( script = [scripts nextObject] ) {
-			[fm changeFileAttributes:[NSDictionary dictionaryWithObject:[NSNumber numberWithUnsignedLong:0744] forKey:NSFilePosixPermissions] atPath:script];
-		}
+//		if ( [fm fileExistsAtPath:scriptPath] ) {
+//			NSString *scriptVersion = [[NSUserDefaults standardUserDefaults] objectForKey:@"ScriptVersion"];
+//			if ( !scriptVersion || NSOrderedAscending == [scriptVersion compare:[[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"] options:NSNumericSearch] )
+//				if ( ![fm removeFileAtPath:scriptFolder handler:nil] )
+//					[Helper dieWithErrorMessage:@"Could not remove the TVShows script folder in the Application Support folder in order to install the new one."];
+//		}
+//		
+//		// Install the script in the Application Support folder
+//		if ( ![fm fileExistsAtPath:scriptFolder] ) {
+//			if ( ![fm copyPath:resourcesScriptFolder toPath:scriptFolder handler:nil] ) {
+//				[Helper dieWithErrorMessage:@"Could not copy the TVShows script in the Application Support folder."];
+//			} else {
+//				// Chmod the scripts to make sure they're executable
+//				[fm changeFileAttributes:[NSDictionary dictionaryWithObject:[NSNumber numberWithUnsignedLong:0744] forKey:NSFilePosixPermissions] atPath:scriptPath];
+//				
+//				// Set the new version
+//				[[NSUserDefaults standardUserDefaults] setObject:[[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"] forKey:@"ScriptVersion"];
+//				[[NSUserDefaults standardUserDefaults] synchronize];
+//			}
+//		}
+//		
+//		// Chmod the ruby scripts in the resource folder
+//		NSEnumerator *scripts = [[[NSBundle mainBundle] pathsForResourcesOfType:@"rb" inDirectory:@""] objectEnumerator];
+//		NSString *script;
+//		while ( script = [scripts nextObject] ) {
+//			[fm changeFileAttributes:[NSDictionary dictionaryWithObject:[NSNumber numberWithUnsignedLong:0744] forKey:NSFilePosixPermissions] atPath:script];
+//		}
 		
 	}
 	return self;

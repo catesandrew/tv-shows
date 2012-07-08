@@ -355,7 +355,7 @@ class TVShows
 		
 		# Maintenance
 		deleteLogFile(File.dirname(showsFile))
-		checkForUpdates
+		#checkForUpdates
 	end
 	
 	def isConnectedToTheInternet
@@ -434,9 +434,9 @@ if ( ARGV.length != 2 ) then
 	ARGV[1] = File.expand_path("~/Library/Application Support/TVShows/TVShows.plist")
 end
 
-TVShows.new(ARGV[0],ARGV[1]).getNewEpisodes
+#TVShows.new(ARGV[0],ARGV[1]).getNewEpisodes
 
 # launchd requires us to be alive for at least 10 seconds
-sleep(10)
+#sleep(10)
 
 exit(0)
