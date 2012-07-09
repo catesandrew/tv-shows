@@ -464,21 +464,7 @@
 		[detailsErrorText setHidden:YES];
 		[detailsTable setHidden:NO];
 		[detailsOKButton setEnabled:YES];
-		[detailsController setSelectedObjects:nil];
-		//if ( [[[details lastObject] objectForKey:ShowType] isEqualToString:TypeSeasonEpisode] ) {
-			[detailsController setSortDescriptors:[NSArray arrayWithObjects:
-				[[[NSSortDescriptor alloc] initWithKey:ShowSeason ascending:NO] autorelease],
-				[[[NSSortDescriptor alloc] initWithKey:ShowEpisode ascending:NO] autorelease],
-				nil]];
-//		} 
-//    else if ( [[[details lastObject] objectForKey:ShowType] isEqualToString:TypeDate] ) {
-//			[detailsController setSortDescriptors:[NSArray arrayWithObject:
-//				[[[NSSortDescriptor alloc] initWithKey:ShowDate ascending:NO] autorelease]]];
-//		} else {
-//			[detailsController setSortDescriptors:[NSArray arrayWithObject:
-//				[[[NSSortDescriptor alloc] initWithKey:ShowTime ascending:NO] autorelease]]];
-//		}
-		
+		[detailsController setSelectedObjects:nil];		
 	}
 }
 

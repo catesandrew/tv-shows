@@ -594,14 +594,6 @@
 									<reference key="NSOnImage" ref="246704564"/>
 									<reference key="NSMixedImage" ref="275748109"/>
 								</object>
-								<object class="NSMenuItem" id="392466067">
-									<reference key="NSMenu" ref="361176246"/>
-									<string key="NSTitle">Check for updates...</string>
-									<string key="NSKeyEquiv"/>
-									<int key="NSMnemonicLoc">2147483647</int>
-									<reference key="NSOnImage" ref="246704564"/>
-									<reference key="NSMixedImage" ref="275748109"/>
-								</object>
 								<object class="NSMenuItem" id="472906042">
 									<reference key="NSMenu" ref="361176246"/>
 									<bool key="NSIsDisabled">YES</bool>
@@ -1735,9 +1727,6 @@
 				<bool key="NSSelectsInsertedObjects">YES</bool>
 				<bool key="NSFilterRestrictsInsertion">YES</bool>
 				<bool key="NSClearsFilterPredicateOnInsertion">YES</bool>
-			</object>
-			<object class="NSCustomObject" id="110654730">
-				<string key="NSClassName">SUUpdater</string>
 			</object>
 			<object class="NSWindowTemplate" id="961309086">
 				<int key="NSWindowStyleMask">4111</int>
@@ -3744,14 +3733,6 @@
 					<int key="connectionID">648</int>
 				</object>
 				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">checkForUpdates:</string>
-						<reference key="source" ref="110654730"/>
-						<reference key="destination" ref="392466067"/>
-					</object>
-					<int key="connectionID">651</int>
-				</object>
-				<object class="IBConnectionRecord">
 					<object class="IBBindingConnection" key="connection">
 						<string key="label">value: values.SUCheckAtStartup</string>
 						<reference key="source" ref="257960467"/>
@@ -4060,7 +4041,6 @@
 							<reference ref="566722589"/>
 							<reference ref="642882654"/>
 							<reference ref="472906042"/>
-							<reference ref="392466067"/>
 						</array>
 						<reference key="parent" ref="54426786"/>
 					</object>
@@ -4125,11 +4105,6 @@
 					<object class="IBObjectRecord">
 						<int key="objectID">196</int>
 						<reference key="object" ref="472906042"/>
-						<reference key="parent" ref="361176246"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">518</int>
-						<reference key="object" ref="392466067"/>
 						<reference key="parent" ref="361176246"/>
 					</object>
 					<object class="IBObjectRecord">
@@ -4531,12 +4506,6 @@
 						<reference key="object" ref="957804663"/>
 						<reference key="parent" ref="0"/>
 						<string key="objectName">DetailsController</string>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">650</int>
-						<reference key="object" ref="110654730"/>
-						<reference key="parent" ref="0"/>
-						<string key="objectName">SparkleUpdater</string>
 					</object>
 					<object class="IBObjectRecord">
 						<int key="objectID">661</int>
@@ -5574,7 +5543,6 @@
 				<string key="480.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="5.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="500.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="518.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="554.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="555.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="56.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
@@ -5591,7 +5559,6 @@
 				<string key="622.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="623.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="624.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="650.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="652.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="653.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="654.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
@@ -5920,25 +5887,6 @@
 					<object class="IBClassDescriptionSource" key="sourceIdentifier">
 						<string key="majorKey">IBProjectSource</string>
 						<string key="minorKey">./Classes/Controller.h</string>
-					</object>
-				</object>
-				<object class="IBPartialClassDescription">
-					<string key="className">SUUpdater</string>
-					<string key="superclassName">NSObject</string>
-					<object class="NSMutableDictionary" key="actions">
-						<string key="NS.key.0">checkForUpdates:</string>
-						<string key="NS.object.0">id</string>
-					</object>
-					<object class="NSMutableDictionary" key="actionInfosByName">
-						<string key="NS.key.0">checkForUpdates:</string>
-						<object class="IBActionInfo" key="NS.object.0">
-							<string key="name">checkForUpdates:</string>
-							<string key="candidateClassName">id</string>
-						</object>
-					</object>
-					<object class="IBClassDescriptionSource" key="sourceIdentifier">
-						<string key="majorKey">IBProjectSource</string>
-						<string key="minorKey">./Classes/SUUpdater.h</string>
 					</object>
 				</object>
 				<object class="IBPartialClassDescription">
