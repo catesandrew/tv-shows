@@ -49,6 +49,12 @@
 - (id)transformedValue:(id)value;
 @end
 
+@interface DetailToStringTransformer2 : NSValueTransformer {
+}
++ (Class)transformedValueClass;
+- (id)transformedValue:(id)value;
+@end
+
 @interface DateToShortDateTransformer : NSValueTransformer {
 }
 + (Class)transformedValueClass;

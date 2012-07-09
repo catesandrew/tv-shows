@@ -85,7 +85,7 @@ var scrapeEZTV = function(_callback, showId) {
     }
   };
 
-  var job = new nodeio.Job({auto_retry:false, timeout:10, retries:3}, methods);
+  var job = new nodeio.Job({auto_retry:true, timeout:10, retries:3, silent:true}, methods);
   nodeio.start(job, {}, function(err, data) {
     if (err) { callback(err); }
     _callback(null, data);
@@ -280,7 +280,7 @@ if (args && args.length > 0) {
       return show.HumanName; 
     });
 
-    console.log(logPlist({ "Shows": shows, "Version": "1" }));
+    console.log(logPlist(shows));
 
   }, showId);
 }

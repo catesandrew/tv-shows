@@ -113,6 +113,17 @@
 }
 @end
 
+@implementation DetailToStringTransformer2
++ (Class)transformedValueClass;
+{
+  return [NSString class];
+}
+- (id)transformedValue:(id)value;
+{
+  return [value objectForKey:@"LastSeen"];
+}
+@end
+
 @implementation DateToShortDateTransformer
 + (Class)transformedValueClass;
 {

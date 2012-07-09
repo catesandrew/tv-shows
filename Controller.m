@@ -46,10 +46,6 @@
 #define TVShowsTorrentFolder		@"TorrentFolder"
 #define TVShowsScriptInstalledVersion @"ScriptVersion"
 
-// Ruby scripts
-//#define RubyDownloadShowList		@"DownloadShowList"
-#define RubyGetShowDetails			@"GetShowDetails"
-
 // Misc
 #define TVShowsURL					@"http://tvshows.sourceforge.net"
 #define TVShowsFeedbackURL			@"http://sourceforge.net/tracker/?group_id=190705"
@@ -408,10 +404,14 @@
 		}
 		getShowDetailsTask = [[NSTask alloc] init];
 		[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(getShowDetailsDidFinish:) name:NSTaskDidTerminateNotification object:getShowDetailsTask];
-		[getShowDetailsTask setArguments:[NSArray arrayWithObject:
-				[[[showsController arrangedObjects] objectAtIndex:[sender clickedRow]] valueForKey:ShowExactName]
-		]];
-		[getShowDetailsTask setLaunchPath:[[NSBundle mainBundle] pathForResource:RubyGetShowDetails ofType:@"rb"]];
+//		[getShowDetailsTask setArguments:[NSArray arrayWithObject:
+//				[[[showsController arrangedObjects] objectAtIndex:[sender clickedRow]] valueForKey:@"ShowId"]
+//		]];
+    
+    [getShowDetailsTask setLaunchPath: [NSString stringWithUTF8String:os_bundled_node_path]];
+    [getShowDetailsTask setCurrentDirectoryPath: [NSString stringWithUTF8String:os_bundled_backend_path]];
+    [getShowDetailsTask setArguments:[NSArray arrayWithObjects:@"get-show-details.js", [[[showsController arrangedObjects] objectAtIndex:[sender clickedRow]] valueForKey:@"ShowId"], nil]];
+
 		getShowDetailsPipe = [NSPipe pipe];
 		[getShowDetailsTask setStandardOutput:getShowDetailsPipe];
 		[getShowDetailsTask launch];
@@ -465,18 +465,19 @@
 		[detailsTable setHidden:NO];
 		[detailsOKButton setEnabled:YES];
 		[detailsController setSelectedObjects:nil];
-		if ( [[[details lastObject] objectForKey:ShowType] isEqualToString:TypeSeasonEpisode] ) {
+		//if ( [[[details lastObject] objectForKey:ShowType] isEqualToString:TypeSeasonEpisode] ) {
 			[detailsController setSortDescriptors:[NSArray arrayWithObjects:
 				[[[NSSortDescriptor alloc] initWithKey:ShowSeason ascending:NO] autorelease],
 				[[[NSSortDescriptor alloc] initWithKey:ShowEpisode ascending:NO] autorelease],
 				nil]];
-		} else if ( [[[details lastObject] objectForKey:ShowType] isEqualToString:TypeDate] ) {
-			[detailsController setSortDescriptors:[NSArray arrayWithObject:
-				[[[NSSortDescriptor alloc] initWithKey:ShowDate ascending:NO] autorelease]]];
-		} else {
-			[detailsController setSortDescriptors:[NSArray arrayWithObject:
-				[[[NSSortDescriptor alloc] initWithKey:ShowTime ascending:NO] autorelease]]];
-		}
+//		} 
+//    else if ( [[[details lastObject] objectForKey:ShowType] isEqualToString:TypeDate] ) {
+//			[detailsController setSortDescriptors:[NSArray arrayWithObject:
+//				[[[NSSortDescriptor alloc] initWithKey:ShowDate ascending:NO] autorelease]]];
+//		} else {
+//			[detailsController setSortDescriptors:[NSArray arrayWithObject:
+//				[[[NSSortDescriptor alloc] initWithKey:ShowTime ascending:NO] autorelease]]];
+//		}
 		
 	}
 }
