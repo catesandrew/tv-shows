@@ -84,6 +84,8 @@
 - (IBAction)subscribe: (id)sender;
 - (IBAction)cancelSubscription: (id)sender;
 - (IBAction)okSubscription: (id)sender;
+- (void)okSubscriptionFinish: (NSNotification *)notification;
+
 - (IBAction)okSubscriptionToNextAiredEpisode: (id)sender;
 - (void)getShowDetailsDidFinish: (NSNotification *)notification;
 - (void) tableView:(NSTableView*)tableView willDisplayCell:(id)cell forTableColumn:(NSTableColumn*)tableColumn row:(int)row;

@@ -233,7 +233,6 @@
 
 - (IBAction)downloadShowList
 {
-			
 	[NSApp beginSheet:progressPanel
 	   modalForWindow:mainWindow
 		modalDelegate:self
@@ -247,17 +246,10 @@
   [aTask setLaunchPath: [NSString stringWithUTF8String:os_bundled_node_path]];
   [aTask setCurrentDirectoryPath: [NSString stringWithUTF8String:os_bundled_backend_path]];
   [aTask setArguments:[NSArray arrayWithObjects:@"download-show-list.js", nil]];
-  //[aTask setArguments:[NSArray arrayWithObjects:@"--import", chaptersFile, filePath, nil]];
-  //[aTask setArguments:[NSArray arrayWithObjects:[h showsPath],ShowsLatestVersion,nil]];
   NSPipe* err = [NSPipe pipe];
   [aTask setStandardError:err];
   [aTask setStandardOutput:err];
   [aTask launch];
-  //[aTask waitUntilExit];
-  //[self logFromProgram:@"mp4chaps" pipe:err];
-  //int ret = [aTask terminationStatus];
-  //[task release];
-  //return ret;
 }
 
 - (void)downloadShowListDidFinish: (NSNotification *)notification
@@ -404,13 +396,10 @@
 		}
 		getShowDetailsTask = [[NSTask alloc] init];
 		[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(getShowDetailsDidFinish:) name:NSTaskDidTerminateNotification object:getShowDetailsTask];
-//		[getShowDetailsTask setArguments:[NSArray arrayWithObject:
-//				[[[showsController arrangedObjects] objectAtIndex:[sender clickedRow]] valueForKey:@"ShowId"]
-//		]];
     
-    [getShowDetailsTask setLaunchPath: [NSString stringWithUTF8String:os_bundled_node_path]];
-    [getShowDetailsTask setCurrentDirectoryPath: [NSString stringWithUTF8String:os_bundled_backend_path]];
-    [getShowDetailsTask setArguments:[NSArray arrayWithObjects:@"get-show-details.js", [[[showsController arrangedObjects] objectAtIndex:[sender clickedRow]] valueForKey:@"ShowId"], nil]];
+   [getShowDetailsTask setLaunchPath: [NSString stringWithUTF8String:os_bundled_node_path]];
+   [getShowDetailsTask setCurrentDirectoryPath: [NSString stringWithUTF8String:os_bundled_backend_path]];
+   [getShowDetailsTask setArguments:[NSArray arrayWithObjects:@"get-show-details.js", [[[showsController arrangedObjects] objectAtIndex:[sender clickedRow]] valueForKey:@"ShowId"], nil]];
 
 		getShowDetailsPipe = [NSPipe pipe];
 		[getShowDetailsTask setStandardOutput:getShowDetailsPipe];
@@ -481,45 +470,53 @@
 {	
 	NSDictionary *selectedShow = [[detailsController selectedObjects] objectAtIndex:0];
 	
-	if ( [[selectedShow objectForKey:ShowType] isEqualToString:TypeSeasonEpisode] ) {
-		[currentShow setValue:[selectedShow objectForKey:ShowSeason] forKeyPath:ShowSeason];
-		[currentShow setValue:[NSNumber numberWithInt:([[selectedShow objectForKey:ShowEpisode] intValue]-1)] forKeyPath:ShowEpisode];
-		[currentShow setValue:[selectedShow objectForKey:ShowType] forKeyPath:ShowType];
-		
-	} else if ( [[selectedShow objectForKey:ShowType] isEqualToString:TypeDate] ) {
-		[currentShow setValue:[[selectedShow objectForKey:ShowDate] addTimeInterval:-3600.0*24.0] forKeyPath:ShowDate];
-		[currentShow setValue:[selectedShow objectForKey:ShowType] forKeyPath:ShowType];
-		
-	} else {
-		[currentShow setValue:[[selectedShow objectForKey:ShowTime] addTimeInterval:-3600.0] forKeyPath:ShowTime];
-		[currentShow setValue:[selectedShow objectForKey:ShowType] forKeyPath:ShowType];
-		
-	}
-	[currentShow setValue:[NSNumber numberWithBool:YES] forKeyPath:ShowSubscribed];
+  [NSApp beginSheet:progressPanel
+	   modalForWindow:detailsSheet
+      modalDelegate:self
+	   didEndSelector:nil
+        contextInfo:nil];
+	[progressPanelIndicator startAnimation:nil];
+	
+	NSTask *aTask = [[NSTask alloc] init];
+	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(okSubscriptionFinish:) name:NSTaskDidTerminateNotification object:aTask];
 
-	[showsController rearrangeObjects];
+  [aTask setLaunchPath: [NSString stringWithUTF8String:os_bundled_node_path]];
+  [aTask setCurrentDirectoryPath: [NSString stringWithUTF8String:os_bundled_backend_path]];
+  [aTask setArguments:[NSArray arrayWithObjects:@"subscribe-show-details.js", 
+      [selectedShow objectForKey:@"ShowId"],
+      [selectedShow objectForKey:@"FileName"],
+      nil]];
+  
+  [currentShow setValue:[NSNumber numberWithBool:YES] forKeyPath:ShowSubscribed];
+  
+//  NSPipe* err = [NSPipe pipe];
+//  [aTask setStandardError:err];
+//  [aTask setStandardOutput:err];
+  [aTask launch];
+}
+
+
+
+- (void)okSubscriptionFinish: (NSNotification *)notification
+{
+  if ( [(NSTask *)[notification object] terminationStatus] != 0 ) {
+    [NSApp endSheet:progressPanel];
+    [progressPanel close];
+    [Helper dieWithErrorMessage:@"Could not x,y,z. Are you connected to the internet?"];
+  } else {
+    [self setShows:[NSDictionary dictionaryWithContentsOfFile:[h showsPath]]];
+    [NSApp endSheet:progressPanel];
+    [progressPanel close];
+  }
+  
+  [showsController rearrangeObjects];
 	[NSApp endSheet:detailsSheet];
 	[detailsSheet close];
 }
 
+
 - (IBAction)okSubscriptionToNextAiredEpisode: (id)sender
 {	
-	NSDictionary *firstShow = [[detailsController arrangedObjects] objectAtIndex:0];
-	
-	if ( [[firstShow objectForKey:ShowType] isEqualToString:TypeSeasonEpisode] ) {
-		[currentShow setValue:[firstShow objectForKey:ShowSeason] forKeyPath:ShowSeason];
-		[currentShow setValue:[firstShow objectForKey:ShowEpisode] forKeyPath:ShowEpisode];
-		[currentShow setValue:[firstShow objectForKey:ShowType] forKeyPath:ShowType];
-		
-	} else if ( [[firstShow objectForKey:ShowType] isEqualToString:TypeDate] ) {
-		[currentShow setValue:[firstShow objectForKey:ShowDate] forKeyPath:ShowDate];
-		[currentShow setValue:[firstShow objectForKey:ShowType] forKeyPath:ShowType];
-		
-	} else {
-		[currentShow setValue:[firstShow objectForKey:ShowTime] forKeyPath:ShowTime];
-		[currentShow setValue:[firstShow objectForKey:ShowType] forKeyPath:ShowType];
-		
-	}
 	[currentShow setValue:[NSNumber numberWithBool:YES] forKeyPath:ShowSubscribed];
 	
 	[showsController rearrangeObjects];

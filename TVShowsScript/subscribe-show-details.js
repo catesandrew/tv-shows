@@ -85,14 +85,14 @@ var scrapeEZTV = function(_callback, showId) {
     }
   };
 
-  var job = new nodeio.Job({auto_retry:true, timeout:10, retries:3, silent:true}, methods);
+  var job = new nodeio.Job({auto_retry:true, timeout:10, retries:3}, methods);
   nodeio.start(job, {}, function(err, data) {
     if (err) { callback(err); }
     _callback(null, data);
   }, true);
 };
 
-var readPlistsAndScrapeEZTV = function(callback, showId) {
+var readPlistsAndScrapeEZTV = function(callback, showId, fileName) {
   async.parallel({
       plists: function(callback) {
         utils.readPlists(function(err, plist) {
@@ -105,6 +105,17 @@ var readPlistsAndScrapeEZTV = function(callback, showId) {
           if (err) { callback(err); }
           callback(null, episodes);
         }, showId);
+      },
+      episode: function(callback) {
+        utils.parseFile(function(err, episode_info) {
+          if (err) { 
+            console.log(err);
+          }
+          else {
+            episode_info.showId = showId;
+            callback(null, episode_info);
+          }
+        }, fileName);
       }
     }, 
     function(err, results) {
@@ -116,6 +127,7 @@ var readPlistsAndScrapeEZTV = function(callback, showId) {
 var args = process.argv.slice(2);
 if (args && args.length > 0) {
   var showId = args[0];
+  var fileName = args[1];
 
   readPlistsAndScrapeEZTV(function(err, data) {
     if (err) { console.log(err); }
@@ -130,6 +142,9 @@ if (args && args.length > 0) {
       //console.log("ShowId: " + episode.showId);
       //console.log(episode.toString());
     //});
+    console.log('---- Incoming Show ----');
+    console.log("ShowId: " + data.episode.showId);
+    console.log(data.episode.toString());
     
     // use show ids
     // 1) build table of showId to subscribed shows
@@ -208,7 +223,7 @@ if (args && args.length > 0) {
     _.each(loloepisodes, function(value, key ,list) {
       var result = _.sortBy(value, function(list) {
         // use  -list[0].toString() to sort descending
-        return -list[0].toString();
+        return list[0].toString();
       });
       loloepisodes[key] = result; 
     });
@@ -217,19 +232,17 @@ if (args && args.length > 0) {
       //console.log("ShowId: " + key);
       //console.log(loloepisodes[key]);
     //});
-
     
     // 4) Go through all episodes, using showId of
     // the episode and see if its in the subscribed 
     // shows table. 
-    var shows = [];
     var torrent_dir = data.plists.userPrefs.TorrentFolder;
     var loloepisode = loloepisodes[showId];
     if (loloepisode) {
       // Do the magic here. We found a possible 
       // show to download that has been subscribed to.
       //console.log('Found show ' + key + ', in lolo episodes');
-      _.each(loloepisode, function(loepisode, index) {
+      async.forEachSeries(loloepisode, function(loepisode, innerCb) {
         var known_show = known_shows[showId];
         // for now, just use the first one, who cares about
         // getting the highest quality available.
@@ -239,51 +252,68 @@ if (args && args.length > 0) {
           // copy over known properties
           incoming_episode.status = known_show.status;
           incoming_episode.exactname = known_show.exactname;
-          incoming_episode.subscribed = known_show.subscribed;
+          incoming_episode.subscribed = true;
           
-          //utils.downloadTorrents(function(err, data) {
-            //if (err) {
-              //// TODO should we update the show info?
-              //console.log("Error: " + data);
-
-            //} else {
-              //console.log("Success: " + data);
+          // download
+          console.log('Processing ' + incoming_episode.toString());
+          utils.downloadTorrents(function(err, data) {
+            if (err) {
+              // TODO should we update the show info?
+              console.log("Error: " + err);
               
-              //// replace known show with incoming episode
-              //known_shows[key] = incoming_episode;
-            //}
-          //}, incoming_episode.torrents, torrent_dir);
+              innerCb(); // advance to the next loepisode 
+            } else {
+              console.log("Success: " + data);
+              
+              // replace known show with incoming episode
+              known_shows[showId] = incoming_episode;
+
+              innerCb(); // advance to the next loepisode
+            }
+          }, incoming_episode.torrents, torrent_dir);
         }
         else if (incoming_episode.compare(known_show) > 0) {
           // the incoming_episode is newer than the latest known show
           
-          //utils.downloadTorrents(function(err, data) {
-            //if (err) {
-              //// TODO: should we update the show info?
-              //console.log("Error: " + data);
+          // download
+          console.log('Processing ' + incoming_episode.toString());
+          utils.downloadTorrents(function(err, data) {
+            if (err) {
+              // TODO: should we update the show info?
+              console.log("Error: " + err);
 
-            //} else {
-              //console.log("Success: " + data);
+              innerCb();// advance to the next loepisode 
+            } else {
+              console.log("Success: " + data);
 
-              //// update known_show to latest version
-              //known_show.updateTo(incoming_episode);
+              // update known_show to latest version
+              known_show.updateTo(incoming_episode);
 
-            //}
-          //}, incoming_episode.torrents, torrent_dir);
+              innerCb(); // advance to the next loepisode 
+            }
+          }, incoming_episode.torrents, torrent_dir);
         }
-        shows.push(incoming_episode.toPlist([
-          ["FileName", "filename"]
-        ]));
+        else {
+          innerCb(); // advance
+        }
+      },
+      function(data) {
+        // 5) save the updated known shows list 
+        var shows = [];
+        _.each(known_shows, function(value, key, list) {
+          shows.push(value.toPlist());
+        });
+        shows = _.sortBy(shows, function(show) { 
+          return show.HumanName; 
+        });
+
+        var plist_file = utils.expandHomeDir("~/Library/Application Support/TVShows/TVShows.plist");
+        utils.writePlist(function(err, obj) {
+          if (err) { console.log(err); }
+          }, { "Shows": shows, "Version": "1" }, plist_file
+        );
       });
     } 
-    
-    // 5) save the updated known shows list 
-    shows = _.sortBy(shows, function(show) { 
-      return show.HumanName; 
-    });
 
-    console.log(utils.exportToPlist(shows));
-
-  }, showId);
+  }, showId, fileName);
 }
-
