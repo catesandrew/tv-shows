@@ -1,18 +1,32 @@
+/*
+ * This script downloads all the episodes for a given show
+ * from eztv. Its used in conjunction with the tvshows
+ * app when a user subscribes to a show and is given
+ * a list of episodes to start a subscription from.
+ * 2) This is called to get list of available episodes
+ *    for a selected show.
+ */
 var async = require('async')
   , fs = require('fs')
   , _ = require('underscore')
   , nodeio = require('node.io')
   , plist = require('plist')
+  , program = require('commander')
   , util = require('util');
 
-var constants = require('./tv-shows-constants.js').constants;
 var utils = require('./utils.js').utils;
+program
+  .version('0.1')
+  .description('Get a list of available episodes to download from eztv')
+  .option('-s, --show-id <id>', 'eztv show id')
+  .option('-d, --debug', 'output extra debug information')
+  .parse(process.argv);
 
-//var TVDB = require('tvdb')
-  //, tvdb = new TVDB({
-      //apiKey: "0629B785CE550C8D",
-      //language: "en"
-    //});
+var verbose = function() {
+  if (program.debug) { 
+    console.log.apply(null, arguments);
+  }
+};
 
 var size_re = new RegExp(".*\\(([0-9]+?[.][0-9]+? [MG]B)\\)$");
 var scrapeEZTV = function(_callback, showId) {
@@ -72,8 +86,9 @@ var scrapeEZTV = function(_callback, showId) {
           }
           else {
             episode_info.showId = episode.showId;
-            episode_info.size = episode.size;
-            episode_info.torrents = episode.torrents;
+            // Don't think we need these
+            //episode_info.size = episode.size;
+            //episode_info.torrents = episode.torrents;
             emits.push(episode_info);
           }
         }, episode.text);
@@ -113,23 +128,22 @@ var readPlistsAndScrapeEZTV = function(callback, showId) {
     });
 };
 
-var args = process.argv.slice(2);
-if (args && args.length > 0) {
-  var showId = args[0];
+if (program.showId) {
+  var showId = program.showId;
 
   readPlistsAndScrapeEZTV(function(err, data) {
     if (err) { console.log(err); }
 
-    //console.log('---- Incoming Shows ----');
-    //_.each(data.episodes, function(episode) {
-      //console.log("ShowId: " + episode.showId + ", Size: " + episode.size);
-      //console.log(episode.toString());
-    //});
-    //console.log('---- Known Shows ----');
-    //_.each(data.plists.showDb.Shows, function(episode) {
-      //console.log("ShowId: " + episode.showId);
-      //console.log(episode.toString());
-    //});
+    verbose('---- Incoming Shows ----');
+    _.each(data.episodes, function(episode) {
+      verbose("ShowId: " + episode.showId + ", Size: " + episode.size);
+      verbose(episode.toString());
+    });
+    verbose('---- Known Shows ----');
+    _.each(data.plists.showDb.Shows, function(episode) {
+      verbose("ShowId: " + episode.showId);
+      verbose(episode.toString());
+    });
     
     // use show ids
     // 1) build table of showId to subscribed shows
@@ -212,13 +226,12 @@ if (args && args.length > 0) {
       });
       loloepisodes[key] = result; 
     });
-    //var keys = _.keys(loloepisodes);
-    //_.each(keys, function(key, index) {
-      //console.log("ShowId: " + key);
-      //console.log(loloepisodes[key]);
-    //});
+    var keys = _.keys(loloepisodes);
+    _.each(keys, function(key, index) {
+      verbose("ShowId: " + key);
+      verbose(loloepisodes[key]);
+    });
 
-    
     // 4) Go through all episodes, using showId of
     // the episode and see if its in the subscribed 
     // shows table. 
@@ -228,52 +241,20 @@ if (args && args.length > 0) {
     if (loloepisode) {
       // Do the magic here. We found a possible 
       // show to download that has been subscribed to.
-      //console.log('Found show ' + key + ', in lolo episodes');
+      verbose('Found show ' + showId + ', in lolo episodes');
       _.each(loloepisode, function(loepisode, index) {
         var known_show = known_shows[showId];
         // for now, just use the first one, who cares about
         // getting the highest quality available.
         var incoming_episode = loepisode[0];
 
-        if (utils.isNoEpisodeInfo(known_show)) {
-          // copy over known properties
-          incoming_episode.status = known_show.status;
-          incoming_episode.exactname = known_show.exactname;
-          incoming_episode.subscribed = known_show.subscribed;
-          
-          //utils.downloadTorrents(function(err, data) {
-            //if (err) {
-              //// TODO should we update the show info?
-              //console.log("Error: " + data);
-
-            //} else {
-              //console.log("Success: " + data);
-              
-              //// replace known show with incoming episode
-              //known_shows[key] = incoming_episode;
-            //}
-          //}, incoming_episode.torrents, torrent_dir);
-        }
-        else if (incoming_episode.compare(known_show) > 0) {
-          // the incoming_episode is newer than the latest known show
-          
-          //utils.downloadTorrents(function(err, data) {
-            //if (err) {
-              //// TODO: should we update the show info?
-              //console.log("Error: " + data);
-
-            //} else {
-              //console.log("Success: " + data);
-
-              //// update known_show to latest version
-              //known_show.updateTo(incoming_episode);
-
-            //}
-          //}, incoming_episode.torrents, torrent_dir);
-        }
-        shows.push(incoming_episode.toPlist([
-          ["FileName", "filename"]
-        ]));
+        //if (utils.isNoEpisodeInfo(known_show)) {
+          // Don't think we need these, remove if not
+          //incoming_episode.status = known_show.status;
+          //incoming_episode.exactname = known_show.exactname;
+          //incoming_episode.subscribed = known_show.subscribed;
+        //}
+        shows.push(incoming_episode.toPlist());
       });
     } 
     
@@ -286,4 +267,8 @@ if (args && args.length > 0) {
 
   }, showId);
 }
-
+else {
+  console.log(program.description());
+  console.log("Version: " + program.version());
+  console.log(program.helpInformation());
+}

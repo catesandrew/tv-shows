@@ -9,6 +9,12 @@ var async = require('async')
   , events = require('events')
   , exec = require('child_process').exec;
 
+var TVDB = require('tvdb')
+  , tvdb = new TVDB({
+      apiKey: "0629B785CE550C8D",
+      language: "en"
+    });
+
 // .+?\s which translates to: "One or more of any character 
 // but as soon as a space is encountered, stop!"
 var filename_patterns = [
@@ -276,22 +282,56 @@ var downloadTorrent = function(callback, downloadfile, dir) {
 
 };
 
-var Utils = function(){
+var strcmp = function( str1, str2 ) {
+  // http://kevin.vanzonneveld.net
+  // +   original by: Waldo Malqui Silva
+  // +      input by: Steve Hilder
+  // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+  // +    revised by: gorthaur
+  // *     example 1: strcmp( 'waldo', 'owald' );
+  // *     returns 1: 1
+  // *     example 2: strcmp( 'owald', 'waldo' );
+  // *     returns 2: -1
+
+  return ( ( str1 == str2 ) ? 0 : ( ( str1 > str2 ) ? 1 : -1 ) );
 };
+
+var calcPadding = function(num) {
+  var min_len = 2,
+      padding = "",
+      len = num.toString().length;
+
+  if (len > min_len) {
+    min_len = len;
+  }
+  for(var i=0; i<min_len;i++) {
+    padding += "0";
+  }
+  return {
+    len:(-1 * min_len),
+    padding:padding
+  }
+};
+
+
+// used for tvdb
+var cache = {};
+
+var Utils = function(){};
 Utils.prototype = {
   formatEpisodeNumbers:function(episodenumbers){
     // Format episode number(s) into string, using configured values
-    var epno;
     if (episodenumbers.length === 1){ 
-      epno = ('00' + episodenumbers[0]).slice(-2);
+      var num = episodenumbers[0],
+          obj = calcPadding(num);
+      return (obj.padding + num).slice(obj.len);
     } else {
       var copy = _.map(episodenumbers, function(num) {
-        return ('00' + num).slice(-2);
+        var obj = calcPadding(num);
+        return (obj.padding + num).slice(obj.len);
       });
       return copy.join('-');
     }
-
-    return epno;
   },
   formatEpisodeName:function(names, join_with){
     //Takes a list of episode names, formats them into a string.
@@ -496,6 +536,14 @@ Utils.prototype = {
     var episode_numbers, episode, series_name,
         year, month, day;
 
+    var keyMapping = {
+      'exactname':'ExactName',
+      'status':'Status',
+      'subscribed':'Subscribed',
+      'showId':'ShowId',
+      'seriesname':'HumanName'
+    };
+
     year = null;
     month = null;
     day = null;
@@ -518,60 +566,76 @@ Utils.prototype = {
       episode_numbers = [new Date(year, month-1, day)];
     }
     else {
-      episode = new NoEpisodeInfo({
-        exactname: show.ExactName,
-        status: show.Status,
-        subscribed: show.Subscribed,
-        showId: show.ShowId,
-        seriesname: show.HumanName
-      });
+      var obj = {};
+      var mapping = _.extend({}, keyMapping);
+
+      obj = utils.extendMap(mapping, obj, show);
+      episode = new NoEpisodeInfo(obj);
       return callback(null, episode);
     }
 
     if (show.Season) {
-      episode = new EpisodeInfo({
-        exactname: show.ExactName,
-        status: show.Status,
-        subscribed: show.Subscribed,
-        showId: show.ShowId,
-        seriesname: show.HumanName,
-        seasonnumber: parseInt(show.Season, 10),
+      var obj = {
         episodenumbers: episode_numbers
+      };
+      var mapping = _.extend({}, keyMapping, {
+        'seasonnumber': 'Season'
       });
+      
+      // the { 'seasonnumber': 'Season' } above in the mapping
+      // prevent Season from being copied over since we
+      // want it to be copied over to seasonnumber.
+      obj = utils.extendMap(mapping, obj, show);
+      // delete Episode since it will get output using
+      // the toPlist() and is derived from episodenumbers.
+      delete obj.Episode;
+      // Now parse the season 
+      obj.seasonnumber = parseInt(show.Season, 10); 
+      episode = new EpisodeInfo(obj);
     }
     else if (show.Year && show.Month && show.Day) {
-      episode = new DatedEpisodeInfo({
-        exactname: show.ExactName,
-        status: show.Status,
-        subscribed: show.Subscribed,
-        showId: show.ShowId,
-        seriesname: show.HumanName,
-        episodenumbers: episode_numbers,
+      var obj = {
+        episodenumbers: episode_numbers
+      };
+      var mapping = _.extend({}, keyMapping, {
+        'year': 'Year',
+        'month': 'Month',
+        'day': 'Day'
+      });
+      // prevent Year, Month, Day from being copied
+      // over as properties in preference to them
+      // being copied over as year, month, day props.
+      // Basically they'll be copied over as year,
+      // month, day, but we'll reset that afterwards.
+      obj = utils.extendMap(mapping, obj, show);
+      // now set the yeaer, month, day props
+      obj = _.extend(obj, {
         year: year,
         month: month,
         day: day
       });
+      episode = new DatedEpisodeInfo(obj);
     }
     else if (show.Group) {
-      episode = new AnimeEpisodeInfo({
-        exactname: show.ExactName,
-        status: show.Status,
-        subscribed: show.Subscribed,
-        showId: show.ShowId,
-        seriesname: show.HumanName,
-        episodenumbers: episode_numbers,
-        group: show.Group
+      var obj = {
+        episodenumbers: episode_numbers
+      };
+      var mapping = _.extend({}, keyMapping, {
+        'group':'Group'
       });
+      obj = utils.extendMap(mapping, obj, show);
+      episode = new AnimeEpisodeInfo(obj);
     }
     else {
-      episode = new NoSeasonEpisodeInfo({
-        exactname: show.ExactName,
-        status: show.Status,
-        subscribed: show.Subscribed,
-        showId: show.ShowId,
-        seriesname: show.HumanName,
-        episodenumbers: episode_numbers
-      });
+      var obj = {
+        'episodenumbers':episode_numbers
+      };
+      var mapping = _.extend({}, keyMapping);
+      obj = utils.extendMap(mapping, obj, show);
+      // delete Episode since it will get output using
+      // the toPlist() and is derived from episodenumbers.
+      delete obj.Episode;
+      episode = new NoSeasonEpisodeInfo(obj);
     }
     return callback(null, episode);
   },
@@ -615,8 +679,7 @@ Utils.prototype = {
   readPlists:function(callback) {
     async.parallel({
       userPrefs: function(callback) {
-        var home = process.env.HOME;
-        var user_prefs_file = home + "/Library/Preferences/net.sourceforge.tvshows.plist";
+        var user_prefs_file = utils.expandHomeDir("~/Library/Preferences/net.sourceforge.tvshows.plist");
         readPlist(function(err, data) {
           //if (err) { callback(err); }
           if (err) {
@@ -632,8 +695,7 @@ Utils.prototype = {
         }, user_prefs_file);
       },
       showDb: function(callback) {
-        var home = process.env.HOME;
-        var tv_shows_db = home + "/Library/Application Support/TVShows/TVShows.plist";
+        var tv_shows_db = utils.expandHomeDir("~/Library/Application Support/TVShows/TVShows.plist");
         readPlist(function(err, data) {
           //if (err) { callback(err); }
           if (err) {
@@ -752,37 +814,177 @@ Utils.prototype = {
       }
     });
     
+  },
+  findTvShow:function(callback, seriesName) {
+    tvdb.findTvShow(seriesName, function(err, tvshows) {
+      if (err) { callback(err); }
+      callback(null, tvshows);
+    });
+  },
+  getSeriesInfo:function(callback, tvdbSeriesId) {
+    //thetvdb.com/api/0629B785CE550C8D/series/74845/all/en.zip
+    //thetvdb.com/api/0629B785CE550C8D/episodes/295369/en.xml
+    if (cache[tvdbSeriesId]) {
+      return done(null, cache[tvdbSeriesId]);
+    }
+    tvdb.getInfo(tvdbSeriesId, function(err, result) {
+      if (err) { callback(err); }
+
+      var emit = [], obj;
+      var keyMapping = {
+        ImdbId: 'ImdbId',
+        SeriesId: 'TvdbSeriesId',
+        EpisodeId: 'TvdbEpisodeId',
+        Overview: 'Overview',
+        EpisodeName: 'EpisodeName',
+        Director: 'Director',
+        Writer: 'Writer',
+        Artwork: 'Artwork',
+        FirstAired: 'FirstAiredOn'
+      };
+      var optReqMapping = {
+        Episode: 'Episode',
+        Season: 'Season'
+      };
+      // parse it into an Episode derivative
+      var episodes = result.episodes || [];
+      _.each(episodes, function(episode) {
+        obj = {
+          HumanName: episode.HumanName
+        };
+        _.each(optReqMapping, function(trgKey, srcKey) {
+          var srcValue = episode[srcKey];
+          if (srcValue) {
+            if (!_.isEmpty(srcValue)) {
+              obj[trgKey] = srcValue;
+            }
+          }
+        });
+
+        utils.parseShow(function(err, episode_info) {
+          if (err) { console.log(err); }
+          else {
+            _.each(keyMapping, function(trgKey, srcKey) {
+              var srcValue = episode[srcKey];
+              if (srcValue) {
+                if ( Object.prototype.toString.call(srcValue) === "[object Date]" ) {
+                  episode_info[trgKey] = srcValue;
+                } else if (!_.isEmpty(srcValue)) {
+                  episode_info[trgKey] = srcValue;
+                }
+              }
+            });
+            emit.push(episode_info);
+          }
+        }, obj);
+        result.episodes = emit;
+      });
+
+      cache[tvdbSeriesId] = cache[tvdbSeriesId] || {};
+      cache[tvdbSeriesId].series = result.series;
+      cache[tvdbSeriesId].episodes = result.episodes;
+      callback(null, result);
+    });
+  },
+  levenshtein: function(left, right) {
+    var cost = [],
+        str1 = left || "",
+        str2 = right || "",
+        n = str1.length,
+        m = right.length,
+        i, j;
+
+    var minimum = function(a,b,c) {
+      var min = a;
+      if(b < min) {
+        min = b;
+      }
+      if(c < min) {
+        min = c;
+      }
+      return min;
+    };
+
+    if(n === 0) {
+      return;  
+    } 
+    if(m === 0) {
+      return;  
+    }
+    for(i=0;i<=n;i++) {
+      cost[i] = [];
+    }
+    for(i=0;i<=n;i++) {
+      cost[i][0] = i;
+    }
+    for(j=0;j<=m;j++) {
+      cost[0][j] = j;
+    }
+    for(i=1;i<=n;i++) {
+      var x = str1.charAt(i-1);
+      for(j=1;j<=m;j++) {
+        var y = str2.charAt(j-1);
+        if(x === y) {
+          cost[i][j] = cost[i-1][j-1]; 
+        } else {
+          cost[i][j] = 1 + minimum(cost[i-1][j-1], cost[i][j-1], cost[i-1][j]);
+        } 
+      }
+    }
+
+    return cost[n][m];  
+  },
+  extendMap : function(mapping, destination, source) {
+    // copy over the mapped keys to their mapped equivalent first
+    _.each(mapping, function(value, key) {
+      utils.copyTo(key, value, destination, source);
+    });
+
+    // copy over non-mapped keys, aka, as-is
+    var mappedKeys = _.values(mapping),
+        srcKeys = _.keys(source);
+    _.each(srcKeys, function(key) {
+      if (_.indexOf(mappedKeys, key) < 0) { // its not in there
+        utils.copyTo(key, key, destination, source);
+      }
+    });
+
+    return destination;
+  },
+  copyTo : function(dkey, skey, dest, src) {
+    var val = src[skey];
+    if (!_.isNull(val) && !_.isUndefined(val)) {
+      if (_.isDate(val) || _.isBoolean(val) || _.isNumber(val) || _.isString(val)) {
+        dest[dkey] = val;
+      } else if (!_.isEmpty(val)) {
+        dest[dkey] = val;
+      }
+    }
   }
 };
 var utils = new Utils();
 exports.utils = utils;
 
-function strcmp ( str1, str2 ) {
-  // http://kevin.vanzonneveld.net
-  // +   original by: Waldo Malqui Silva
-  // +      input by: Steve Hilder
-  // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-  // +    revised by: gorthaur
-  // *     example 1: strcmp( 'waldo', 'owald' );
-  // *     returns 1: 1
-  // *     example 2: strcmp( 'owald', 'waldo' );
-  // *     returns 2: -1
-
-  return ( ( str1 == str2 ) ? 0 : ( ( str1 > str2 ) ? 1 : -1 ) );
-}
-
 function EpisodeInfo(opts) {
   opts = opts || {};
   _.extend(this, opts);
-
   return this;
 }
 EpisodeInfo.prototype = {
   toString:function() {
+    var obj = calcPadding(this.seasonnumber);
     return this.seriesname + 
       ", S: " + 
-      ('00' + this.seasonnumber).slice(-2) +
+      (obj.padding + this.seasonnumber).slice(obj.len) +
       ", E: " +
+      utils.formatEpisodeNumbers(this.episodenumbers);
+  },
+  toFileName:function(){
+    var obj = calcPadding(this.seasonnumber);
+    return this.seriesname + 
+      " - S" + 
+      (obj.padding+ this.seasonnumber).slice(obj.len) +
+      "E" +
       utils.formatEpisodeNumbers(this.episodenumbers);
   },
   equals:function(episodeInfo) {
@@ -805,32 +1007,31 @@ EpisodeInfo.prototype = {
     this.episodenumbers = episodeInfo.episodenumbers;
     this.seasonnumber = episodeInfo.seasonnumber;
   },
-  toPlist:function(additional_optionals) {
-    // Format episode number into string, or a list
-    var epno = utils.formatEpisodeNumbers(this.episodenumbers);
-    var optionals = [
-      ["ExactName", "exactname"],
-      ["Status", "status"],
-      ["Subscribed", "subscribed"],
-      ["ShowId", "showId"]
-    ];
-    _.extend(optionals, additional_optionals);
-    var obj = {}, that = this;
-    _.each(optionals, function(optional, index) {
-      if ( typeof(that[optional[1]]) !== "undefined" ) {
-        obj[optional[0]] = that[optional[1]];
-      }
-    });
+  toPlist:function() {
+    var mapping = {
+      'HumanName':'seriesname',
+      'ExactName':'exactname',
+      'Status':'status',
+      'Subscribed':'subscribed',
+      'ShowId':'showId',
+      'FileName':'filename',
+      'Season':'seasonnumber'
+    };
 
+    var obj = utils.extendMap(mapping, {}, this);
+    // We output episodenumbers as Episode
+    delete obj.episodenumbers;
+    
+    // Format episode number into string, or a list
+    var epno = utils.formatEpisodeNumbers(this.episodenumbers),
+        pad = calcPadding(this.seasonnumber);
     var lastSeen = "S: " + 
-      ('00' + this.seasonnumber).slice(-2) +
+      (pad.padding + this.seasonnumber).slice(pad.len) +
       ", E: " +
       utils.formatEpisodeNumbers(this.episodenumbers);
 
     return _.extend({
-      HumanName: this.seriesname,
       Episode: epno,
-      Season: this.seasonnumber,
       LastSeen: lastSeen
     }, obj);
   },
@@ -860,8 +1061,7 @@ EpisodeInfo.prototype = {
     var epdata = {
       'seriesname': this.seriesname,
       'seasonnumber': this.seasonnumber,
-      'episode': epno,
-      'episodename': this.episodename,
+      'episode': epno
     };
 
     return epdata;
@@ -871,7 +1071,6 @@ EpisodeInfo.prototype = {
 function NoSeasonEpisodeInfo(opts) {
   opts = opts || {};
   _.extend(this, opts);
-
   return this;
 }
 NoSeasonEpisodeInfo.prototype = {
@@ -898,28 +1097,26 @@ NoSeasonEpisodeInfo.prototype = {
     }
     this.episodenumbers = noSeasonEpisodeInfo.episodenumbers;
   },
-  toPlist:function(additional_optionals) {
+  toPlist:function() {
+    var mapping = {
+      'HumanName':'seriesname',
+      'ExactName':'exactname',
+      'Status':'status',
+      'Subscribed':'subscribed',
+      'ShowId':'showId',
+      'FileName':'filename'
+    };
+
+    var obj = utils.extendMap(mapping, {}, this);
+    // We output episodenumbers as Episode
+    delete obj.episodenumbers;
+
     // Format episode number into string, or a list
     var epno = utils.formatEpisodeNumbers(this.episodenumbers);
-    var optionals = [
-      ["ExactName", "exactname"],
-      ["Status", "status"],
-      ["Subscribed", "subscribed"],
-      ["ShowId", "showId"]
-    ];
-    _.extend(optionals, additional_optionals);
-    var obj = {}, that = this;
-    _.each(optionals, function(optional, index) {
-      if ( typeof(that[optional[1]]) !== "undefined" ) {
-        obj[optional[0]] = that[optional[1]];
-      }
-    });
-
     var lastSeen = "E: " +
         utils.formatEpisodeNumbers(this.episodenumbers);
 
     return _.extend({
-      HumanName: this.seriesname,
       Episode: epno,
       LastSeen: lastSeen
     }, obj);
@@ -951,7 +1148,6 @@ NoSeasonEpisodeInfo.prototype = {
 function DatedEpisodeInfo(opts) {
   opts = opts || {};
   _.extend(this, opts);
-
   return this;
 }
 DatedEpisodeInfo.prototype = {
@@ -999,21 +1195,24 @@ DatedEpisodeInfo.prototype = {
     this.day = datedEpisodeInfo.day;
     this.episodenumbers = datedEpisodeInfo.episodenumbers;
   },
-  toPlist:function(additional_optionals) {
-    var optionals = [
-      ["ExactName", "exactname"],
-      ["Status", "status"],
-      ["Subscribed", "subscribed"],
-      ["ShowId", "showId"]
-    ];
-    _.extend(optionals, additional_optionals);
-    var obj = {}, that = this;
-    _.each(optionals, function(optional, index) {
-      if ( typeof(that[optional[1]]) !== "undefined" ) {
-        obj[optional[0]] = that[optional[1]];
-      }
-    });
+  toPlist:function() {
+    var mapping = {
+      'HumanName':'seriesname',
+      'ExactName':'exactname',
+      'Status':'status',
+      'Subscribed':'subscribed',
+      'ShowId':'showId',
+      'FileName':'filename',
+      'Year':'year',
+      'Month':'month',
+      'Day':'day'
+    };
 
+    var obj = utils.extendMap(mapping, {}, this);
+    // We output episodenumbers as Year, Month, and Day
+    delete obj.episodenumbers;
+
+    // build Last Seen
     var copy = _.map(this.episodenumbers, function(date) {
       return ('00' + (date.getMonth()+1)).slice(-2) +
         "-" + 
@@ -1024,10 +1223,6 @@ DatedEpisodeInfo.prototype = {
     var lastSeen = "E: " + copy.join(', ');
 
     return _.extend({
-      HumanName: this.seriesname,
-      Year: this.year,
-      Month: this.month,
-      Day: this.day,
       LastSeen: lastSeen
     }, obj);
   },
@@ -1059,7 +1254,6 @@ DatedEpisodeInfo.prototype = {
 function AnimeEpisodeInfo(opts) {
   opts = opts || {};
   _.extend(this, opts);
-
   return this;
 }
 AnimeEpisodeInfo.prototype = {
@@ -1068,33 +1262,30 @@ AnimeEpisodeInfo.prototype = {
       ", E: " +
       utils.formatEpisodeNumbers(this.episodenumbers);
   },
-  toPlist:function(additional_optionals) {
-    var optionals = [
-      ["ExactName", "exactname"],
-      ["Status", "status"],
-      ["Subscribed", "subscribed"],
-      ["ShowId", "showId"]
-    ];
-    _.extend(optionals, additional_optionals);
-    var obj = {}, that = this;
-    _.each(optionals, function(optional, index) {
-      if ( typeof(that[optional[1]]) !== "undefined" ) {
-        obj[optional[0]] = that[optional[1]];
-      }
-    });
+  toPlist:function() {
+    var mapping = {
+      'HumanName':'seriesname',
+      'ExactName':'exactname',
+      'Status':'status',
+      'Subscribed':'subscribed',
+      'ShowId':'showId',
+      'FileName':'filename',
+      'Group':'group'
+    };
+
+    var obj = utils.extendMap(mapping, {}, this);
+    // We output episodenumbers as Year, Month, and Day
+    delete obj.episodenumbers;
     
     // Format episode number into string, or a list
     var epno = utils.formatEpisodeNumbers(this.episodenumbers);
     if (epno) {
       obj.Episode = epno;
     }
-
     var lastSeen = "E: " +
       utils.formatEpisodeNumbers(this.episodenumbers);
 
     return _.extend({
-      HumanName: this.seriesname,
-      Group: this.group,
       LastSeen: lastSeen
     }, obj);
   },
@@ -1130,24 +1321,16 @@ NoEpisodeInfo.prototype = {
   equals:function(noEpisodeInfo) {
     return this.seriesname === noEpisodeInfo.seriesname;
   },
-  toPlist:function(additional_optionals) {
-    var optionals = [
-      ["ExactName", "exactname"],
-      ["Status", "status"],
-      ["Subscribed", "subscribed"],
-      ["ShowId", "showId"]
-    ];
-    _.extend(optionals, additional_optionals);
-    var obj = {}, that = this;
-    _.each(optionals, function(optional, index) {
-      if ( typeof(that[optional[1]]) !== "undefined" ) {
-        obj[optional[0]] = that[optional[1]];
-      }
-    });
+  toPlist:function() {
+    var mapping = {
+      'HumanName':'seriesname',
+      'ExactName':'exactname',
+      'Status':'status',
+      'Subscribed':'subscribed',
+      'ShowId':'showId'
+    };
 
-    return _.extend({
-      HumanName: this.seriesname
-    }, obj);
+    return utils.extendMap(mapping, {}, this);
   },
   populateFromTvDb:function(tvdb, forceName, seriesId) {
     // Queries the node-tvdb instance for episode name and corrected series
@@ -1162,11 +1345,8 @@ NoEpisodeInfo.prototype = {
     });
   },
   getepdata:function() {
-    var epno = utils.formatEpisodeNumbers(this.episodenumbers);
-
     var epdata = {
-      'seriesname': this.seriesname,
-      'episode': epno
+      'seriesname': this.seriesname
     };
 
     return epdata;
