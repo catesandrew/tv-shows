@@ -399,7 +399,10 @@
     
    [getShowDetailsTask setLaunchPath: [NSString stringWithUTF8String:os_bundled_node_path]];
    [getShowDetailsTask setCurrentDirectoryPath: [NSString stringWithUTF8String:os_bundled_backend_path]];
-   [getShowDetailsTask setArguments:[NSArray arrayWithObjects:@"get-show-details.js", [[[showsController arrangedObjects] objectAtIndex:[sender clickedRow]] valueForKey:@"ShowId"], nil]];
+   [getShowDetailsTask setArguments:[NSArray arrayWithObjects:@"get-show-details.js", 
+      @"--show-id", 
+      [[[showsController arrangedObjects] objectAtIndex:[sender clickedRow]] valueForKey:@"ShowId"], 
+      nil]];
 
 		getShowDetailsPipe = [NSPipe pipe];
 		[getShowDetailsTask setStandardOutput:getShowDetailsPipe];
@@ -483,7 +486,9 @@
   [aTask setLaunchPath: [NSString stringWithUTF8String:os_bundled_node_path]];
   [aTask setCurrentDirectoryPath: [NSString stringWithUTF8String:os_bundled_backend_path]];
   [aTask setArguments:[NSArray arrayWithObjects:@"subscribe-show-details.js", 
+      @"--show-id",
       [selectedShow objectForKey:@"ShowId"],
+      @"--file-name",
       [selectedShow objectForKey:@"FileName"],
       nil]];
   
