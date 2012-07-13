@@ -492,7 +492,7 @@
       [selectedShow objectForKey:@"FileName"],
       nil]];
   
-  [currentShow setValue:[NSNumber numberWithBool:YES] forKeyPath:ShowSubscribed];
+  //[currentShow setValue:[NSNumber numberWithBool:YES] forKeyPath:ShowSubscribed];
   
 //  NSPipe* err = [NSPipe pipe];
 //  [aTask setStandardError:err];
