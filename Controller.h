@@ -5,9 +5,10 @@
 */
 
 #import <Cocoa/Cocoa.h>
+#import "AMShellWrapper.h"
 #import "Helper.h"
 
-@interface Controller : NSObject {
+@interface Controller : NSWindowController <AMShellWrapperDelegate, NSApplicationDelegate> {
 
 	// Experimental
 	NSArray *tableItems;
@@ -54,8 +55,32 @@
 	NSPipe *getShowDetailsPipe;
 	int currentShowIndex;
 	NSDictionary *currentShow;
-	
+  
+  NSString *currentShellOutput;
+  AMShellWrapper *shellWrapper;	
 }
+
+- (AMShellWrapper *)shellWrapper;
+- (void)setShellWrapper:(AMShellWrapper *)newShellWrapper;
+
+// ============================================================
+// conforming to the AMShellWrapperController protocol:
+// ============================================================
+
+- (void)process:(AMShellWrapper *)wrapper appendOutput:(id)output;
+// output from stdout
+
+- (void)process:(AMShellWrapper *)wrapper appendError:(NSString *)error;
+// output from stderr
+
+- (void)processStarted:(AMShellWrapper *)wrapper;
+// This method is a callback which your controller can use to do other initialization
+// when a process is launched.
+
+- (void)processFinished:(AMShellWrapper *)wrapper withTerminationStatus:(int)resultCode;
+// This method is a callback which your controller can use to do other cleanup
+// when a process is halted.
+
 
 // Toolbar
 - (NSToolbarItem *)toolbar: (NSToolbar *)toolbar itemForItemIdentifier:(NSString *)itemIdentifier willBeInsertedIntoToolbar:(BOOL)flag;
@@ -73,6 +98,9 @@
 - (void)setShows: (NSDictionary *)someShows;
 - (NSArray *)details;
 - (void)setDetails: (NSArray *)someDetails;
+
+- (NSString *)currentShellOutput;
+- (void)setCurrentShellOutput: (NSString *)someOutput;
 
 // Preferences
 - (IBAction)openPreferences: (id)sender;

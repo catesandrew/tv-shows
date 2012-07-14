@@ -308,6 +308,34 @@
 	}
 }
 		
+- (NSString *)currentShellOutput;
+{
+	return currentShellOutput;
+}
+
+- (void)setCurrentShellOutput: (NSString *)someOutput
+{
+	if ( someOutput != currentShellOutput ) {
+		[currentShellOutput release];
+		currentShellOutput = [someOutput retain];
+	}
+}
+
+- (AMShellWrapper *)shellWrapper
+{
+	return shellWrapper;
+}
+
+- (void)setShellWrapper:(AMShellWrapper *)newShellWrapper
+{
+	id old = nil;
+	
+	if (newShellWrapper != shellWrapper) {
+		old = shellWrapper;
+		shellWrapper = [newShellWrapper retain];
+		[old release];
+	}
+}
 
 #pragma mark -
 #pragma mark Preferences
@@ -369,6 +397,97 @@
 	}
 }
 
+// ============================================================
+// conforming to the AMShellWrapperDelegate protocol:
+// ============================================================
+
+// output from stdout
+- (void)process:(AMShellWrapper *)wrapper appendOutput:(id)output
+{
+  NSString *ouput = [[self currentShellOutput] stringByAppendingString:output];
+  [self setCurrentShellOutput:ouput];
+}
+
+// output from stderr
+- (void)process:(AMShellWrapper *)wrapper appendError:(NSString *)error
+{
+	//[errorOutlet setString:[[errorOutlet string] stringByAppendingString:error]];
+}
+
+// This method is a callback which your controller can use to do other initialization
+// when a process is launched.
+- (void)processStarted:(AMShellWrapper *)wrapper
+{
+//	[progressIndicator startAnimation:self];
+//	[runButton setTitle:@"Stop"];
+//	[runButton setAction:@selector(stopTask:)];
+}
+
+// This method is a callback which your controller can use to do other cleanup
+// when a process is halted.
+- (void)processFinished:(AMShellWrapper *)wrapper withTerminationStatus:(int)resultCode
+{
+  	[self setShellWrapper:nil];
+//	[textOutlet scrollRangeToVisible:NSMakeRange([[textOutlet string] length], 0)];
+//	[errorOutlet scrollRangeToVisible:NSMakeRange([[errorOutlet string] length], 0)];
+//	[runButton setEnabled:YES];
+//	[progressIndicator stopAnimation:self];
+//	[runButton setTitle:@"Execute"];
+//	[runButton setAction:@selector(printBanner:)];
+
+  // Already retried
+	if ( retries >= 2 ) {
+		
+		retries = 0;
+		[detailsProgressIndicator setHidden:YES];
+		[detailsErrorText setStringValue:@"Could not reach eztv.it, please retry later."];
+		return;
+		
+    // Should retry
+	} else if ( resultCode != 0 ) {
+
+		retries++;
+		[self subscribe:nil];
+    
+    // Ok
+	} else {
+		retries = 0;
+    NSString *errorString;    
+    id someDetails = [NSPropertyListSerialization
+                      propertyListFromData:[[self currentShellOutput] dataUsingEncoding:NSUTF8StringEncoding]
+                      mutabilityOption:NSPropertyListImmutable
+                      format:NULL
+                      errorDescription:&errorString];
+    
+    if ( errorString ) {
+      NSLog(@"TVShows: error getting show details (%@).",errorString);
+      [errorString release];
+      return;
+    }
+    
+    [self setDetails:(NSArray *)someDetails];
+    [detailsProgressIndicator setHidden:YES];
+    [detailsErrorText setHidden:YES];
+    [detailsTable setHidden:NO];
+    [detailsOKButton setEnabled:YES];
+    [detailsController setSelectedObjects:nil];	
+    [self setCurrentShellOutput:nil];	
+	}
+}
+
+- (void)processLaunchException:(NSException *)exception
+{
+  	NSString* temp=[NSString stringWithFormat:@"\rcaught %@ while executing command\r", [exception name]];
+//	[textOutlet scrollRangeToVisible:NSMakeRange([[textOutlet string] length], 0)];
+//	[errorOutlet scrollRangeToVisible:NSMakeRange([[errorOutlet string] length], 0)];
+//	[runButton setEnabled:YES];
+//	[progressIndicator stopAnimation:self];
+//	[runButton setTitle:@"Execute"];
+//	[runButton setAction:@selector(printBanner:)];
+	[self setShellWrapper:nil];
+  [self setCurrentShellOutput:nil];
+}
+
 #pragma mark -
 #pragma mark Show list
 
@@ -394,76 +513,53 @@
 				  contextInfo:nil];
 			[detailsProgressIndicator startAnimation:nil];
 		}
-		getShowDetailsTask = [[NSTask alloc] init];
-		[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(getShowDetailsDidFinish:) name:NSTaskDidTerminateNotification object:getShowDetailsTask];
     
-   [getShowDetailsTask setLaunchPath: [NSString stringWithUTF8String:os_bundled_node_path]];
-   [getShowDetailsTask setCurrentDirectoryPath: [NSString stringWithUTF8String:os_bundled_backend_path]];
-   [getShowDetailsTask setArguments:[NSArray arrayWithObjects:@"get-show-details.js", 
-      @"--show-id", 
-      [[[showsController arrangedObjects] objectAtIndex:[sender clickedRow]] valueForKey:@"ShowId"], 
-      nil]];
-
-		getShowDetailsPipe = [NSPipe pipe];
-		[getShowDetailsTask setStandardOutput:getShowDetailsPipe];
-		[getShowDetailsTask launch];
+    [self setCurrentShellOutput:@""];
+    AMShellWrapper *wrapper = [[[AMShellWrapper alloc] 
+                                initWithInputPipe:nil 
+                                outputPipe:nil 
+                                errorPipe:nil 
+                                workingDirectory:[NSString stringWithUTF8String:os_bundled_backend_path] 
+                                environment:nil 
+                                arguments:[NSArray arrayWithObjects:
+                                           [NSString stringWithUTF8String:os_bundled_node_path],
+                                           @"get-show-details.js", 
+                                           @"--show-id", 
+                                           [[[showsController arrangedObjects] objectAtIndex:[sender clickedRow]] valueForKey:@"ShowId"], 
+                                           nil] 
+                                context:NULL] autorelease];
+    
+    [wrapper setDelegate:self];
+    [self setShellWrapper:wrapper];
+    
+    NS_DURING
+    if (shellWrapper) {
+      [shellWrapper setOutputStringEncoding:NSASCIIStringEncoding];
+      [shellWrapper startProcess];
+      
+      //[self write:@"launched: "];
+      //[self write:[arguments objectAtIndex:0]];
+      //[self write:@"\r"];
+    } else {
+      //[self write:@"Ops! Something went wrong.\r Was not able to execute command.\r"];
+    }
+    NS_HANDLER
+    NSLog(@"Caught %@: %@", [localException name], [localException reason]);
+    [self processLaunchException:localException];
+    NS_ENDHANDLER
 	} else {
 		[currentShow setValue:[NSNumber numberWithBool:NO] forKeyPath:ShowSubscribed];
-		/*
-		[currentShow setValue:[NSNumber numberWithInt:0] forKeyPath:ShowSeason];
-		[currentShow setValue:[NSNumber numberWithInt:0] forKeyPath:ShowEpisode];
-		[currentShow setValue:[NSNumber numberWithBool:NO] forKeyPath:ShowSubscribed];
-		 */
 		[showsController rearrangeObjects];
 	}
 }
 
 - (void)getShowDetailsDidFinish: (NSNotification *)notification
 {	
-	// Already retried
-	if ( retries >= 2 ) {
-		
-		retries = 0;
-		[detailsProgressIndicator setHidden:YES];
-		[detailsErrorText setStringValue:@"Could not reach eztv.it, please retry later."];
-		return;
-		
-	// Should retry
-	} else if ( 0 != [getShowDetailsTask terminationStatus] ) {
-		
-		retries++;
-		[self subscribe:nil];
-	
-	// Ok
-	} else {
-	
-		retries = 0;
-		NSString *errorString;
-		id someDetails = [NSPropertyListSerialization
-			propertyListFromData:[[getShowDetailsPipe fileHandleForReading] readDataToEndOfFile]
-				mutabilityOption:NSPropertyListImmutable
-						  format:NULL
-				errorDescription:&errorString];
-		
-		if ( errorString ) {
-			NSLog(@"TVShows: error getting show details (%@).",errorString);
-			[errorString release];
-			return;
-		}
-		
-		[self setDetails:(NSArray *)someDetails];
-		[detailsProgressIndicator setHidden:YES];
-		[detailsErrorText setHidden:YES];
-		[detailsTable setHidden:NO];
-		[detailsOKButton setEnabled:YES];
-		[detailsController setSelectedObjects:nil];		
-	}
 }
 
 - (IBAction)cancelSubscription: (id)sender
 {
-	[[NSNotificationCenter defaultCenter] removeObserver:self name:NSTaskDidTerminateNotification object:getShowDetailsTask];
-	[getShowDetailsTask terminate];
+  [shellWrapper stopProcess];
 	[currentShow setValue:[NSNumber numberWithBool:NO] forKeyPath:ShowSubscribed];
 	[NSApp endSheet:detailsSheet];
 	[detailsSheet close];

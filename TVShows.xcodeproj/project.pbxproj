@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		49055CF615A7EEF2000246A4 /* TVShowsNodejs in Resources */ = {isa = PBXBuildFile; fileRef = 49055CF515A7EEF2000246A4 /* TVShowsNodejs */; };
 		49055CFA15A7F882000246A4 /* osdep.m in Sources */ = {isa = PBXBuildFile; fileRef = 49055CF915A7F882000246A4 /* osdep.m */; };
+		497A099B15B1E01400C10E10 /* AMShellWrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 497A099A15B1E01400C10E10 /* AMShellWrapper.m */; };
 		5B1F7FF50BE22EB900B1094B /* Bookmark.png in Resources */ = {isa = PBXBuildFile; fileRef = 5B1F7FF40BE22EB900B1094B /* Bookmark.png */; };
 		5B1F7FF70BE22F9600B1094B /* Web.png in Resources */ = {isa = PBXBuildFile; fileRef = 5B1F7FF60BE22F9600B1094B /* Web.png */; };
 		5B1F7FF90BE22FF600B1094B /* Clock.png in Resources */ = {isa = PBXBuildFile; fileRef = 5B1F7FF80BE22FF600B1094B /* Clock.png */; };
@@ -62,6 +63,8 @@
 		49055CF515A7EEF2000246A4 /* TVShowsNodejs */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; name = TVShowsNodejs; path = Resources/TVShowsNodejs; sourceTree = "<group>"; };
 		49055CF815A7F882000246A4 /* osdep.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = osdep.h; sourceTree = "<group>"; };
 		49055CF915A7F882000246A4 /* osdep.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = osdep.m; sourceTree = "<group>"; };
+		497A099915B1E01400C10E10 /* AMShellWrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AMShellWrapper.h; sourceTree = "<group>"; };
+		497A099A15B1E01400C10E10 /* AMShellWrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AMShellWrapper.m; sourceTree = "<group>"; };
 		5B1F7FF40BE22EB900B1094B /* Bookmark.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Bookmark.png; sourceTree = "<group>"; };
 		5B1F7FF60BE22F9600B1094B /* Web.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Web.png; sourceTree = "<group>"; };
 		5B1F7FF80BE22FF600B1094B /* Clock.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Clock.png; sourceTree = "<group>"; };
@@ -118,6 +121,8 @@
 				5B7FB0AB0B904ABF006692A9 /* Controller.h */,
 				5B7FB0AC0B904ABF006692A9 /* Controller.m */,
 				5B5DF4E60B9731C200E847D5 /* ValueTransformers.h */,
+				497A099915B1E01400C10E10 /* AMShellWrapper.h */,
+				497A099A15B1E01400C10E10 /* AMShellWrapper.m */,
 				5B5DF5010B97325600E847D5 /* ValueTransformers.m */,
 				5B3557C50B9715E800080026 /* Helper.h */,
 				5B3557C60B9715E800080026 /* Helper.m */,
@@ -310,6 +315,7 @@
 				5BD9367F0B972185007EBF80 /* TVTableView.m in Sources */,
 				5B5DF5020B97325600E847D5 /* ValueTransformers.m in Sources */,
 				49055CFA15A7F882000246A4 /* osdep.m in Sources */,
+				497A099B15B1E01400C10E10 /* AMShellWrapper.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

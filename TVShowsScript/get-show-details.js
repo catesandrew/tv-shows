@@ -81,7 +81,7 @@ var scrapeEZTV = function(_callback, showId) {
       episodes.forEach(function(episode) {
         utils.parseFile(function(err, episode_info) {
           if (err) { 
-            console.log(err);
+            console.error(err);
             //_callback(err); 
           }
           else {
@@ -132,7 +132,7 @@ if (program.showId) {
   var showId = program.showId;
 
   readPlistsAndScrapeEZTV(function(err, data) {
-    if (err) { console.log(err); }
+    if (err) { console.error(err); }
 
     verbose('---- Incoming Shows ----');
     _.each(data.episodes, function(episode) {
@@ -256,11 +256,11 @@ if (program.showId) {
         shows.push(incoming_episode.toPlist());
       });
     } 
-    
+                        
     // 5) sort in descending order
     shows = utils.descSortByStr(shows, "LastSeen");
-    
     console.log(utils.exportToPlist(shows));
+    process.exit();
 
   }, showId);
 }
