@@ -239,32 +239,39 @@
 	   didEndSelector:nil
 		  contextInfo:nil];
 	[progressPanelIndicator startAnimation:nil];
-	
-	NSTask *aTask = [[NSTask alloc] init];
-	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(downloadShowListDidFinish:) name:NSTaskDidTerminateNotification object:aTask];
-	
-  [aTask setLaunchPath: [NSString stringWithUTF8String:os_bundled_node_path]];
-  [aTask setCurrentDirectoryPath: [NSString stringWithUTF8String:os_bundled_backend_path]];
-  [aTask setArguments:[NSArray arrayWithObjects:@"download-show-list.js", nil]];
-  NSPipe* err = [NSPipe pipe];
-  [aTask setStandardError:err];
-  [aTask setStandardOutput:err];
-  [aTask launch];
+  
+  [self setCurrentShellOutput:@""];
+  downloadShowListTask = [[[AMShellWrapper alloc] 
+                         initWithInputPipe:nil 
+                         outputPipe:nil 
+                         errorPipe:nil 
+                         workingDirectory:[NSString stringWithUTF8String:os_bundled_backend_path] 
+                         environment:nil 
+                         arguments:[NSArray arrayWithObjects:
+                                    [NSString stringWithUTF8String:os_bundled_node_path],
+                                    @"download-show-list.js", 
+                                    nil] 
+                         context:NULL] autorelease];
+  
+  [downloadShowListTask setDelegate:self];
+  [self setShellWrapper:downloadShowListTask];
+  
+  NS_DURING
+  if (shellWrapper) {
+    [shellWrapper setOutputStringEncoding:NSASCIIStringEncoding];
+    [shellWrapper startProcess];
+    
+    //[self write:@"launched: "];
+    //[self write:[arguments objectAtIndex:0]];
+    //[self write:@"\r"];
+  } else {
+    //[self write:@"Ops! Something went wrong.\r Was not able to execute command.\r"];
+  }
+  NS_HANDLER
+  NSLog(@"Caught %@: %@", [localException name], [localException reason]);
+  [self processLaunchException:localException];
+  NS_ENDHANDLER
 }
-
-- (void)downloadShowListDidFinish: (NSNotification *)notification
-{
-	if ( [(NSTask *)[notification object] terminationStatus] != 0 ) {
-		[NSApp endSheet:progressPanel];
-		[progressPanel close];
-		[Helper dieWithErrorMessage:@"Could not download the show list. Are you connected to the internet ?"];
-	} else {
-		[self setShows:[NSDictionary dictionaryWithContentsOfFile:[h showsPath]]];
-		[NSApp endSheet:progressPanel];
-		[progressPanel close];
-	}
-}
-
 
 #pragma mark -
 #pragma mark Setters/Getters
@@ -427,63 +434,73 @@
 // when a process is halted.
 - (void)processFinished:(AMShellWrapper *)wrapper withTerminationStatus:(int)resultCode
 {
-  	[self setShellWrapper:nil];
-//	[textOutlet scrollRangeToVisible:NSMakeRange([[textOutlet string] length], 0)];
-//	[errorOutlet scrollRangeToVisible:NSMakeRange([[errorOutlet string] length], 0)];
-//	[runButton setEnabled:YES];
-//	[progressIndicator stopAnimation:self];
-//	[runButton setTitle:@"Execute"];
-//	[runButton setAction:@selector(printBanner:)];
-
-  // Already retried
-	if ( retries >= 2 ) {
-		
-		retries = 0;
-		[detailsProgressIndicator setHidden:YES];
-		[detailsErrorText setStringValue:@"Could not reach eztv.it, please retry later."];
-		return;
-		
-    // Should retry
-	} else if ( resultCode != 0 ) {
-
-		retries++;
-		[self subscribe:nil];
-    
-    // Ok
-	} else {
-		retries = 0;
-    NSString *errorString;    
-    id someDetails = [NSPropertyListSerialization
-                      propertyListFromData:[[self currentShellOutput] dataUsingEncoding:NSUTF8StringEncoding]
-                      mutabilityOption:NSPropertyListImmutable
-                      format:NULL
-                      errorDescription:&errorString];
-    
-    if ( errorString ) {
-      NSLog(@"TVShows: error getting show details (%@).",errorString);
-      [errorString release];
+  if (shellWrapper == getShowDetailsTask) 
+  {
+    // Already retried
+    if ( retries >= 2 ) {
+      
+      retries = 0;
+      [detailsProgressIndicator setHidden:YES];
+      [detailsErrorText setStringValue:@"Could not reach eztv.it, please retry later."];
       return;
+      
+      // Should retry
+    } else if ( resultCode != 0 ) {
+      
+      retries++;
+      [self subscribe:nil];
+      
+      // Ok
+    } else {
+      retries = 0;
+      NSString *errorString;    
+      id someDetails = [NSPropertyListSerialization
+                        propertyListFromData:[[self currentShellOutput] dataUsingEncoding:NSUTF8StringEncoding]
+                        mutabilityOption:NSPropertyListImmutable
+                        format:NULL
+                        errorDescription:&errorString];
+      
+      if ( errorString ) {
+        NSLog(@"TVShows: error getting show details (%@).",errorString);
+        [errorString release];
+        return;
+      }
+      
+      [self setDetails:(NSArray *)someDetails];
+      [detailsProgressIndicator setHidden:YES];
+      [detailsErrorText setHidden:YES];
+      [detailsTable setHidden:NO];
+      [detailsOKButton setEnabled:YES];
+      [detailsController setSelectedObjects:nil];	
     }
     
-    [self setDetails:(NSArray *)someDetails];
-    [detailsProgressIndicator setHidden:YES];
-    [detailsErrorText setHidden:YES];
-    [detailsTable setHidden:NO];
-    [detailsOKButton setEnabled:YES];
-    [detailsController setSelectedObjects:nil];	
-    [self setCurrentShellOutput:nil];	
-	}
+    // cleanup
+    [self setCurrentShellOutput:nil];
+    [self setShellWrapper:nil];
+  }
+  else if(shellWrapper == downloadShowListTask) 
+  {
+    if ( resultCode != 0 ) {
+      [NSApp endSheet:progressPanel];
+      [progressPanel close];
+      [Helper dieWithErrorMessage:@"Could not download the show list. Are you connected to the internet ?"];
+    } else {
+      [self setShows:[NSDictionary dictionaryWithContentsOfFile:[h showsPath]]];
+      [NSApp endSheet:progressPanel];
+      [progressPanel close];
+    }
+    // cleanup
+    [self setCurrentShellOutput:nil];
+    [self setShellWrapper:nil];    
+  }
 }
 
 - (void)processLaunchException:(NSException *)exception
 {
-  	NSString* temp=[NSString stringWithFormat:@"\rcaught %@ while executing command\r", [exception name]];
-//	[textOutlet scrollRangeToVisible:NSMakeRange([[textOutlet string] length], 0)];
-//	[errorOutlet scrollRangeToVisible:NSMakeRange([[errorOutlet string] length], 0)];
-//	[runButton setEnabled:YES];
-//	[progressIndicator stopAnimation:self];
-//	[runButton setTitle:@"Execute"];
-//	[runButton setAction:@selector(printBanner:)];
+  NSString* errorString = [NSString stringWithFormat:@"\rcaught %@ while executing command\r", [exception name]];
+  NSLog(@"TVShows: (%@).", errorString);
+  [errorString release];
+  
 	[self setShellWrapper:nil];
   [self setCurrentShellOutput:nil];
 }
@@ -515,7 +532,7 @@
 		}
     
     [self setCurrentShellOutput:@""];
-    AMShellWrapper *wrapper = [[[AMShellWrapper alloc] 
+    getShowDetailsTask = [[[AMShellWrapper alloc] 
                                 initWithInputPipe:nil 
                                 outputPipe:nil 
                                 errorPipe:nil 
@@ -529,8 +546,8 @@
                                            nil] 
                                 context:NULL] autorelease];
     
-    [wrapper setDelegate:self];
-    [self setShellWrapper:wrapper];
+    [getShowDetailsTask setDelegate:self];
+    [self setShellWrapper:getShowDetailsTask];
     
     NS_DURING
     if (shellWrapper) {
@@ -551,10 +568,6 @@
 		[currentShow setValue:[NSNumber numberWithBool:NO] forKeyPath:ShowSubscribed];
 		[showsController rearrangeObjects];
 	}
-}
-
-- (void)getShowDetailsDidFinish: (NSNotification *)notification
-{	
 }
 
 - (IBAction)cancelSubscription: (id)sender
@@ -590,12 +603,8 @@
   
   //[currentShow setValue:[NSNumber numberWithBool:YES] forKeyPath:ShowSubscribed];
   
-//  NSPipe* err = [NSPipe pipe];
-//  [aTask setStandardError:err];
-//  [aTask setStandardOutput:err];
   [aTask launch];
 }
-
 
 
 - (void)okSubscriptionFinish: (NSNotification *)notification

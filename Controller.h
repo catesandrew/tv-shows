@@ -49,10 +49,11 @@
 	int retries;
 	
 	// Download show
-	NSPipe *downloadShowListPipe;
-	NSTask *downloadShowListTask;
-	NSTask *getShowDetailsTask;
-	NSPipe *getShowDetailsPipe;
+	AMShellWrapper *downloadShowListTask;
+  // TODO: Impl okSubscriptionTask
+  AMShellWrapper *okSubscriptionTask;
+	AMShellWrapper *getShowDetailsTask;
+
 	int currentShowIndex;
 	NSDictionary *currentShow;
   
@@ -89,7 +90,6 @@
 
 // Download Show List
 - (IBAction)downloadShowList;
-- (void)downloadShowListDidFinish: (NSNotification *)notification;
 
 // Setters/getters
 - (NSArray *)qualities;
@@ -98,7 +98,6 @@
 - (void)setShows: (NSDictionary *)someShows;
 - (NSArray *)details;
 - (void)setDetails: (NSArray *)someDetails;
-
 - (NSString *)currentShellOutput;
 - (void)setCurrentShellOutput: (NSString *)someOutput;
 
@@ -115,7 +114,6 @@
 - (void)okSubscriptionFinish: (NSNotification *)notification;
 
 - (IBAction)okSubscriptionToNextAiredEpisode: (id)sender;
-- (void)getShowDetailsDidFinish: (NSNotification *)notification;
 - (void) tableView:(NSTableView*)tableView willDisplayCell:(id)cell forTableColumn:(NSTableColumn*)tableColumn row:(int)row;
 - (IBAction)filterShows: (id)sender;
 
