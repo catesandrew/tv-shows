@@ -220,9 +220,8 @@ if (program.showId) {
     //       torrents: [Object] } ] ]
     //
     _.each(loloepisodes, function(value, key ,list) {
-      var result = _.sortBy(value, function(list) {
-        // use  -list[0].toString() to sort descending
-        return -list[0].toString();
+      var result = utils.descSortByStr(value, function(list) {
+        return list[0].toString();
       });
       loloepisodes[key] = result; 
     });
@@ -258,11 +257,9 @@ if (program.showId) {
       });
     } 
     
-    // 5) save the updated known shows list 
-    shows = _.sortBy(shows, function(show) { 
-      return show.HumanName; 
-    });
-
+    // 5) sort in descending order
+    shows = utils.descSortByStr(shows, "LastSeen");
+    
     console.log(utils.exportToPlist(shows));
 
   }, showId);
