@@ -14,3 +14,11 @@ of searching for new episodes for each subscription, n times, now we download th
 scurb it, and see if any match one from the subscribed list. 
 
 It runs well without the application frontend if one were so inclined. 
+
+== Building
+
+First clone this repo, then init the git submodules and update them. This will put the scripts into TVShowsScript
+folder. Then you will have to run `npm link` in the TVShowsScript folder to get the node_modules folder populated.
+
+Node is required for running npm I think and for you to play around with the scripts if you would like. However,
+a binary of node is included so the final application is not dependent on it.
